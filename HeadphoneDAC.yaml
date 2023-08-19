@@ -1,0 +1,10 @@
+workspace: HeadphoneDAC.cywrk
+
+projects:
+  - HeadphoneDAC.cydsn
+
+version: HeadphoneDAC.cydsn/version.h
+
+build_type: Debug
+
+psoc_creator_version: 4.4

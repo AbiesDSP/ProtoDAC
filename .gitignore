@@ -1,0 +1,24 @@
+build
+venv
+.vscode
+__pycache__
+
+# PSoC Ignored Files
+# Ignore all but TopDesign, project file, design wide resources, main.c, and cyapicallbacks.h
+# The main cywrk file should be added, but not ".cywrk.user". This needs testing
+*.cywrk*
+*.cydsn/*
+!*.cywrk
+!*.cydsn/*.cyprj
+!*.cydsn/*.cydwr
+!*.cydsn/*.c
+!*.cydsn/*.h
+!*.cydsn/TopDesign/
+!*.cydsn/TopDesign/*.cysch
+!*.cydsn/CMakeLists.txt
+*.LOG
+*.cycdx
+*.cyfit
+*.rpt
+*.svd
+*.html
