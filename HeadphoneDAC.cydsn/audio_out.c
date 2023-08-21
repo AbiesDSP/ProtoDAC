@@ -1,6 +1,5 @@
 #include "audio_out.h"
 #include "muter.h"
-
 #include "loggers.h"
 
 #include <I2S.h>
@@ -69,9 +68,6 @@ static int active_limit = 0;
 static int underflow_limit = 0;
 static int overflow_limit = 0;
 
-static uint16_t source_dst_addr = 0;
-static uint8_t source_td_config = 0;
-
 static int buffer_capacity = 0;
 
 void audio_out_init(const audio_out_config *_config)
@@ -83,33 +79,18 @@ void audio_out_init(const audio_out_config *_config)
     // Turn on I2S when buffer is half full.
     active_limit = buffer_capacity >> 1;
 
-    underflow_limit = config->transfer_size * 2;
+    underflow_limit = config->transfer_size * config->overflow_limit;
     overflow_limit = buffer_capacity - underflow_limit;
 
-    // Send usb data to another source.
-    source_dma_td[0] = CyDmaTdAllocate();
-
     // Use the byte swap component
-    if (config->swap_endian)
-    {
-        // Send source data to the byte swap component
-        source_dma_ch = DMA_BS_RX_DmaInitialize(1u, 1u, HI16(CYDEV_SRAM_BASE), HI16(CYDEV_PERIPH_BASE));
-        source_dst_addr = LO16((uint32_t)byte_swap_tx_fifo_in_ptr);
-        source_td_config = TD_INC_SRC_ADR;
-
-        bs_dma_config();
-        bs_tx_isr_StartEx(source_done_isr);
-    }
-    else
-    {
-        // Send source data directly to tx_buffer.
-        source_dma_ch = DMA_AudioTxProcess_DmaInitialize(1u, 1u, HI16(CYDEV_SRAM_BASE), HI16(CYDEV_SRAM_BASE));
-        source_dst_addr = LO16((uint32_t)config->buffer);
-        source_td_config = TD_INC_SRC_ADR | TD_INC_DST_ADR | DMA_AudioTxProcess__TD_TERMOUT_EN;
-
-        process_tx_isr_StartEx(source_done_isr);
-    }
-
+    // Send source data to the byte swap component
+    source_dma_ch = DMA_BS_RX_DmaInitialize(1u, 1u, HI16(CYDEV_SRAM_BASE), HI16(CYDEV_PERIPH_BASE));
+    source_dma_td[0] = CyDmaTdAllocate();
+    
+    //
+    bs_dma_config();
+    bs_tx_isr_StartEx(source_done_isr);
+    
     // Initialize the i2s modules
     i2s_dma_config();
     i2s_tx_isr_StartEx(i2s_tx_done_isr);
@@ -133,19 +114,20 @@ void audio_out_transmit(const uint8_t *audio_buf, uint16_t amount)
     if (audio_out_buffer_size >= overflow_limit)
     {
         audio_out_status |= AUDIO_OUT_STS_OVERFLOW;
-        log_error(&serial_log, "Overflow");
+        // log_error(&serial_log, "Overflow");
         // Drop data on the floor? Pause USB?
         return;
     }
 
     // Start a dma transaction to send data to the destination
-    CyDmaTdSetConfiguration(source_dma_td[0], amount, CY_DMA_DISABLE_TD, source_td_config);
-    CyDmaTdSetAddress(source_dma_td[0], LO16((uint32_t)audio_buf), source_dst_addr);
+    CyDmaTdSetConfiguration(source_dma_td[0], amount, CY_DMA_DISABLE_TD, TD_INC_SRC_ADR);
+    CyDmaTdSetAddress(source_dma_td[0], LO16((uint32_t)audio_buf), LO16((uint32_t)byte_swap_tx_fifo_in_ptr));
     CyDmaChSetInitialTd(source_dma_ch, source_dma_td[0]);
     CyDmaChEnable(source_dma_ch, 1u);
 
     // If we're copying bytes directly, it may be more/fewer than config->transfer_size
     audio_out_buffer_size += amount;
+
     // If it's off and we're over half full, start it up.
     if (audio_out_buffer_size >= active_limit)
     {
@@ -162,6 +144,7 @@ static void bs_dma_config(void)
     const uint8_t *dst = config->buffer;
     
     // Use the max transfer size for byte swap transfers.
+    #if AUDIO_OUT_BS_USE_MAX_TRANSFER_SIZE
     int remaining = buffer_capacity;
     uint8_t *td = bs_dma_td;
     int required_tds = (remaining + DMA_MAX_TRANSFER_SIZE - 1) / DMA_MAX_TRANSFER_SIZE;
@@ -183,19 +166,20 @@ static void bs_dma_config(void)
         dst += transfer_size;
         td++;
     }
+    #else
     
     // Use the i2s transfer size for byte swap transfers.
-//    for (int i = 0; i < config->n_tds; i++)
-//    {
-//        bs_dma_td[i] = CyDmaTdAllocate();
-//    }
-//    for (int i = 0; i < config->n_tds; i++)
-//    {
-//        CyDmaTdSetConfiguration(bs_dma_td[i], config->transfer_size, bs_dma_td[(i + 1) % config->n_tds], td_config);
-//        CyDmaTdSetAddress(bs_dma_td[i], LO16((uint32_t)byte_swap_tx_fifo_out_ptr), LO16((uint32_t)dst));
-//        dst += config->transfer_size;
-//    }
-
+    for (int i = 0; i < config->n_tds; i++)
+    {
+        bs_dma_td[i] = CyDmaTdAllocate();
+    }
+    for (int i = 0; i < config->n_tds; i++)
+    {
+        CyDmaTdSetConfiguration(bs_dma_td[i], config->transfer_size, bs_dma_td[(i + 1) % config->n_tds], td_config);
+        CyDmaTdSetAddress(bs_dma_td[i], LO16((uint32_t)byte_swap_tx_fifo_out_ptr), LO16((uint32_t)dst));
+        dst += config->transfer_size;
+    }
+    #endif
     CyDmaChSetInitialTd(bs_dma_ch, bs_dma_td[0]);
     CyDmaChEnable(bs_dma_ch, 1u);
 }
@@ -243,6 +227,6 @@ CY_ISR(i2s_tx_done_isr)
         audio_out_status |= AUDIO_OUT_STS_UNDERFLOW;
         audio_out_status |= AUDIO_OUT_STS_RESET;
         audio_out_disable();
-        log_error(&serial_log, "Underflow");
+        // log_error(&serial_log, "Underflow");
     }
 }

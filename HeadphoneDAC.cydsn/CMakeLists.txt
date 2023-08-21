@@ -18,5 +18,6 @@ endif()
 
 add_library(serial serial.c)
 
+add_library(audio_proc audio_proc.c)
 
 # add_library(audio_out audio_out.c)

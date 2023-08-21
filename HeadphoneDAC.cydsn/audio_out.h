@@ -3,6 +3,8 @@
 #include <muter.h>
 #include <stdint.h>
 
+#define AUDIO_OUT_BS_USE_MAX_TRANSFER_SIZE 1
+
 #define AUDIO_OUT_STS_ACTIVE 0x01
 #define AUDIO_OUT_STS_OVERFLOW 0x02
 #define AUDIO_OUT_STS_UNDERFLOW 0x04
@@ -16,21 +18,19 @@ struct audio_out_config
     int n_tds;
     // Set to null to use malloc, otherwise the size must be transfer_size*n_tds.
     const uint8_t *buffer;
-
-    int swap_endian;
-    int limit_offset;
+    int overflow_limit;
 };
 
 // Current size of the main output buffer.
 extern volatile int audio_out_buffer_size;
 
-// Status register. Updated audiomatically.
+// Status register. Indicates if audio is playing
 extern volatile uint8_t audio_out_status;
 
 // Start up DMA channels, I2S, and ISRs.
 void audio_out_init(const audio_out_config *config);
 
-// Gets called on audio out ep isr. Put in cyapicallbacks.h for the USBFS EP1 Entry Callback.
+// Call this to write data to the transmit buffer.
 void audio_out_transmit(const uint8_t *source_data, uint16_t amount);
 
 // Start and stop audio playback and I2S.
