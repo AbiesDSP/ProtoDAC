@@ -3,13 +3,15 @@
 #include <muter.h>
 #include <stdint.h>
 
-#define AUDIO_OUT_BS_USE_MAX_TRANSFER_SIZE 1
+// Pre-allocated space for i2s tds.
+#define AUDIO_OUT_MAX_TDS 100
 
+// Indicates that i2s is enabled and transmitting data. If it has underflowed, this will be cleared.
 #define AUDIO_OUT_STS_ACTIVE 0x01
+// Transmitter is in the overflow state.
 #define AUDIO_OUT_STS_OVERFLOW 0x02
-#define AUDIO_OUT_STS_UNDERFLOW 0x04
-#define AUDIO_OUT_STS_RESET 0x08
 
+// Configure audio output.
 typedef struct audio_out_config audio_out_config;
 struct audio_out_config
 {
@@ -18,6 +20,7 @@ struct audio_out_config
     int n_tds;
     // Set to null to use malloc, otherwise the size must be transfer_size*n_tds.
     const uint8_t *buffer;
+    // Number of blocks(transfer_size) before limit before under/overflow is detected.
     int overflow_limit;
 };
 

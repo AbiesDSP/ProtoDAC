@@ -25,8 +25,9 @@ parser.add_argument("--delim", default="\n")
 def main():
     """"""
     args = parser.parse_args()
-    delim: str = args.delim
-    delim = "\r"
+    delim = args.delim.encode()
+    if delim == b"\\r":
+        delim = b"\r"
 
     with open_d2xx() as ftdi:
         ftdi: FTD2XX
@@ -36,11 +37,11 @@ def main():
             rx_size = ftdi.getQueueStatus()
             if rx_size > 0:
                 rx_data.extend(ftdi.read(rx_size))
-                spl = rx_data.split(delim.encode(), 1)
+                spl = rx_data.split(delim, 1)
                 # New line
                 if len(spl) > 1:
                     rx_data = spl[1]
-                    print(spl[0].decode(), end=delim)
+                    print(spl[0].decode(), end=delim.decode())
 
 
 if __name__ == "__main__":

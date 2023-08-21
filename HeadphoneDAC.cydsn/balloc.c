@@ -9,7 +9,7 @@ static void balloc_init(void)
     static int is_initialized = 0;
     if (!is_initialized)
     {
-        for (int i = 0; i < sizeof(mem_pool); i++)
+        for (unsigned int i = 0; i < sizeof(mem_pool); i++)
         {
             mem_pool[i] = 0xFF;
         }

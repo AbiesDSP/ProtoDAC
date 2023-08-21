@@ -73,13 +73,12 @@ void pack_usb_data_float(uint8_t *usb_buf, int n_samples, const float *src, int 
     }
 }
 
-float *volume(const float *src, float *dst, int amount, float gain)
+void volume(const float *src, float *dst, int amount, float gain)
 {
     for (int i = 0; i < amount; i++)
     {
         dst[i] = src[i] * gain;
     }
-    return dst;
 }
 
 void lpf_exp(const float *src, float *dst, int n_samples, float a, float *last)

@@ -11,10 +11,7 @@
 // #define USB_MAX_BUF_SIZE (294u)
 // 96kHz
 #define USB_MAX_BUF_SIZE 588
-// 48kHz
-// #define FB_DEFAULT 0x0C0000
-// 96kHz
-// #define FB_DEFAULT 0x180000
+
 #define FS48KHZ 48000
 #define FS96KHZ 96000
 

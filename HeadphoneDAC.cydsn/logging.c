@@ -25,6 +25,8 @@ int log_handler_init_funcs(log_handler *handler, log_handler_write_func write, l
 
 int stdout_handler(log_handler *_self, const char *src, int size)
 {
+    (void)_self;
+    (void)size;
     return printf(src);
 }
 
@@ -61,7 +63,10 @@ void mem_log_handler_init(mem_log_handler *handler, uint8_t *buf, int size)
 int sprintf_formatter(const log_formatter *formatter, char *dst, const log_entry_config *config, va_list args);
 int raw_formatter(const log_formatter *formatter, char *dst, const log_entry_config *config, va_list args);
 
-const log_formatter _default_log_formatter = {.format = sprintf_formatter, .header_fmt = "%s: ", .args_fmt = "%s", .delim = 0};
+const log_formatter _default_log_formatter = {
+    .format = sprintf_formatter,
+    .header_fmt = "[%s : %s] - ",
+};
 const log_formatter *default_log_formatter = &_default_log_formatter;
 
 void logger_init(logger *log, const log_handler *handler, const log_formatter *formatter)
@@ -107,31 +112,25 @@ void log_(const logger *log, const log_entry_config *config, va_list args)
 int sprintf_formatter(const log_formatter *self, char *dst, const log_entry_config *config, va_list args)
 {
     char *dptr = dst;
-    const char esc_char = 27;
-
-    // Prepend the log level.
-    dptr += sprintf(dptr, self->header_fmt, log_level2str(config->level));
-    dptr += vsprintf(dptr, self->args_fmt, args);
-
-    // Use esc_char delim to
-    if (self->delim != esc_char)
-    {
-        *dptr = self->delim;
-        dptr++;
-    }
+    // Prepend the log level and filename
+    dptr += sprintf(dptr, self->header_fmt, log_level2str(config->level), config->source_file);
+    // Timestamp?
+    
+    dptr += vsprintf(dptr, config->args_fmt, args);
 
     return dptr - dst;
 }
 
-void sprintf_formatter_init(log_formatter *formatter, const char *header_fmt, const char *args_fmt)
+void sprintf_formatter_init(log_formatter *formatter, const char *header_fmt)
 {
     formatter->format = sprintf_formatter;
     formatter->header_fmt = header_fmt;
-    formatter->args_fmt = args_fmt;
-    formatter->delim = default_log_formatter->delim;
+//    formatter->delim = default_log_formatter->delim;
 }
 
 int raw_formatter(const log_formatter *formatter, char *dst, const log_entry_config *config, va_list args)
 {
+    (void)config;
+    (void)formatter;
     return vsprintf(dst, "%s", args);
 }
