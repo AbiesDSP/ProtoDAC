@@ -36,11 +36,16 @@ extern volatile uint32_t sample_rate_feedback;
 extern uint8_t usb_status;
 extern uint8_t usb_alt_setting[USB_NO_STREAM_IFACE];
 
+extern volatile int usb_audio_out_update_flag;
+extern volatile int usb_audio_out_count;
 extern uint8_t usb_audio_out_buf[USB_MAX_BUF_SIZE];
 
 // Set up USB and which buffer audio output gets put into.
 void usb_start(uint32_t sample_rate);
-// Called every 128 samples when feedback ep is updated. Put this in cyapicallbacks as USBFS EP3 Entry Callback.
-void usb_feedback(void);
+
+// Audio out EP update isr. Update the audio count.
+CY_ISR_PROTO(usb_audio_out_ep_isr);
+CY_ISR_PROTO(usb_audio_out_fb_isr);
+
 // Call in main loop to handle usb stuff
 void usb_service(void);

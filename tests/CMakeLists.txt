@@ -12,10 +12,19 @@ include(Catch)
 
 # Main test runner.
 add_executable(run_all_tests
-    test_hello.cpp
+    test_logging.cpp
+    test_list.cpp
 )
-target_link_libraries(run_all_tests Catch2::Catch2WithMain)
 
-set_target_properties(run_all_tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/tests)
+target_include_directories(run_all_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/HeadphoneDAC.cydsn
+)
+target_link_libraries(run_all_tests
+    logging
+    list
+    Catch2::Catch2WithMain)
+
+# target_compile_definitions(run_all_tests PRIVATE "LOG_ENABLE_TRACE=$<IF:$<CONFIG:Debug>,1,0>")
+# set_target_properties(run_all_tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/tests)
 
 catch_discover_tests(run_all_tests)

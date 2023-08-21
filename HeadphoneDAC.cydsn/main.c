@@ -1,13 +1,18 @@
 #include "project.h"
 #include "usb.h"
 #include "audio_out.h"
+#include "muter.h"
 
-uint16_t audio_out_buf_size_buf[2048];
-uint16_t audio_out_buf_size_index = 0;
-#define AO_BUF_SIZE_INDEX_MASK 0x7FF
+#include "logging.h"
+#include "loggers.h"
+#include "serial.h"
+#include <string.h>
+#include <stdio.h>
 
-volatile int update_100ms_flag = 0;
-CY_ISR_PROTO(update_100ms_isr);
+#define ever (;;)
+
+uint8_t serial_rx_buffer[1024];
+uint8_t serial_tx_buffer[1024];
 
 volatile int adc_update_flag = 0;
 CY_ISR_PROTO(adc_isr);
@@ -15,147 +20,107 @@ CY_ISR_PROTO(adc_isr);
 volatile int sync_counter_flag = 0;
 CY_ISR_PROTO(sync_counter_update_isr);
 
+CY_ISR_PROTO(serial_tx_isr);
+
+serial ser;
+
+int serial_handler_write(log_handler *self, const char *src, int amount)
+{
+    (void)self;
+    serial_send(&ser, src, amount);
+    return amount;
+}
+
+volatile int service_serial_tx_flag = 0;
+
+#define AUDIO_TX_TRANSFER_SIZE 288
+#define AUDIO_TX_N_TDS 32
+static uint8_t audio_tx_buf[AUDIO_TX_TRANSFER_SIZE * AUDIO_TX_N_TDS];
+
+logger serial_log;
+
 int main(void)
 {
     CyGlobalIntEnable;
 
-    // Configure usb audio output.
-    audio_out_start();
+    mute_sw_isr_StartEx(mute_isr);
+    set_mute(AUDIO_ENABLED);
 
     usb_start(48000);
 
-//    // Configure comm channels
-//    comm_tx_init();
-//    comm_rx_init();
+    // Configure usb audio output.
+    audio_out_config audio_tx_config = {
+        .transfer_size = AUDIO_TX_TRANSFER_SIZE,
+        .n_tds = AUDIO_TX_N_TDS,
+        .buffer = audio_tx_buf,
+        .swap_endian = 1,
+    };
+    audio_out_init(&audio_tx_config);
 
-//    // Start the UART hardware
-//    tx_isr_StartEx(comm_tx_isr);
-//    flush_isr_StartEx(comm_rx_isr);
-//    Flush_Init(0xFFFF, 0xFFFF);
-//    UART_Start();
+    serial_init(&ser, serial_rx_buffer, sizeof(serial_rx_buffer), serial_tx_buffer, sizeof(serial_tx_buffer));
+    tx_isr_StartEx(serial_tx_isr);
 
-//
-//    // Analog data
-//    adc_eoc_isr_StartEx(adc_isr);
+    log_handler serial_handler;
+    log_handler_init_funcs(&serial_handler, serial_handler_write, NULL);
 
-//    // Set up eeprom
-//    eeprom_init();
-//    usb_fs_measured.sram_buf = (uint8_t *)usb_fs_measured_buf;
-//    audio_out_buf_size.sram_buf = (uint8_t *)audio_out_buf_size_buf;
-//
-//    for (int i = 0; i < (USB_FS_MEASURED_SIZE / 4); i++)
-//    {
-//        usb_fs_measured_buf[i] = 0;
-//    }
-//    avril_init(avril_nodes, N_INTERFACES);
-//
-//    // Timer_1_Start();
-//    // timer_1_isr_StartEx(update_100ms_isr);
-//
-//    analog_start();
+    log_formatter formatter;
+    //sprintf_formatter_init(&formatter, "%s: ", "txsize: %d, srfb: %d        ");
+    sprintf_formatter_init(&formatter, "%s: ", "%s");
+    formatter.delim = '\n';
+
+    logger_init(&serial_log, &serial_handler, &formatter);
+    serial_log.level = LOG_WARN;
 
     FrameCount_Start();
     sync_counter_start();
     sync_counter_isr_StartEx(sync_counter_update_isr);
 
-    int buf_size_update_interval = 0;
-
-    for (;;)
+    for ever
     {
+        // Process audio here.
+        if (usb_audio_out_update_flag)
+        {
+            usb_audio_out_update_flag = 0;
+            audio_out_transmit(usb_audio_out_buf, usb_audio_out_count);
+        }
+        
         // USB Handler
         if (USBFS_GetConfiguration())
         {
             usb_service();
         }
 
-        // Transmit analog data to fpga.
-        if (update_100ms_flag)
+        // Update USB Measured FS buffer
+        if (sync_counter_flag)
         {
-            update_100ms_flag = 0;
+            sync_counter_flag = 0;
+            // Magic numbers.
+            uint32_t new_usb_feedback = sync_counter_read() / 3.0;
 
-//            analog_read_all(knob_data.knobs);
-//            while (spi_status != SPI_DONE)
-//                ;
-//            spi_transaction((uint8_t *)&knob_data, sizeof(knob_data), NULL, 0);
+            // Update the feedback register
+            uint8_t int_status = CyEnterCriticalSection();
+            sample_rate_feedback = new_usb_feedback;
+            CyExitCriticalSection(int_status);
+
+            int sample_rate = sample_rate_feedback / 16.384;
+            log_info(&serial_log, audio_out_buffer_size, sample_rate);
+        }
+        
+        // Transmit analog data to fpga.
+        if (service_serial_tx_flag)
+        {
+            service_serial_tx_flag = 0;
+//            serial_service_tx_isr(&ser);
         }
 
         // Update adc low-pass filter/oversampling
         if (adc_update_flag)
         {
             adc_update_flag = 0;
-//            analog_update_filter();
-//            ADC_SAR_Seq_StartConvert();
-        }
-
-        if (audio_out_update_flag)
-        {
-            audio_out_update_flag = 0;
-
-            if (buf_size_update_interval++ == 0)
-            {
-                buf_size_update_interval = 0;
-                audio_out_buf_size_buf[audio_out_buf_size_index++ & AO_BUF_SIZE_INDEX_MASK] = audio_out_buffer_size;
-            }
-        }
-
-        // Update USB Measured FS buffer
-        if (sync_counter_flag)
-        {
-            update_100ms_flag = 1;
-            sync_counter_flag = 0;
-            // Magic numbers.
-            uint32_t new_usb_feedback = sync_counter_read() / 3.0;
-
-//            const int log_int = 32;
-
-//            usb_fs_measured_buf[usb_fs_measured_index & USB_FS_MEASURED_ADDR_MASK] = new_usb_feedback;
-//            usb_fs_measured_index++;
-//            if (usb_fs_measured_index == log_int)
-//            {
-//                usb_fs_measured_index = 0;
-//            }
-
-            // Update the feedback register
-            uint8_t int_status = CyEnterCriticalSection();
-            sample_rate_feedback = new_usb_feedback;
-            CyExitCriticalSection(int_status);
+            //            analog_update_filter();
+            //            ADC_SAR_Seq_StartConvert();
         }
     }
-}
-
-//void handle_commands(void)
-//{
-//    size_t rx_size = comm_rx_buffer_size();
-//
-//    if (rx_size)
-//    {
-//        if (comm_rx_status)
-//        {
-//            comm_rx_status--;
-//        }
-//
-//        // Check if there is a delimeted packet.
-//        size_t next_packet_size = comm_rx_find(0);
-//
-//        // Expected message size was found.
-//        if (next_packet_size < rx_size)
-//        {
-//            size_t decoded = comm_rx_decode((uint8_t *)&msg, next_packet_size);
-//            (void)decoded; // Check if decoded == command.command.length + AVRIL_HEADER_SIZE
-//            int write_cmd = (msg.command.address & AVRIL_WRITE_CMD);
-//            avril_exec(msg.command, msg.data);
-//            // Read command requires a response
-//            if (write_cmd == 0)
-//            {
-//                comm_tx_encode((uint8_t *)&msg, msg.command.length + AVRIL_HEADER_SIZE);
-//            }
-//        }
-//    }
-//}
-
-CY_ISR(update_100ms_isr)
-{
-    update_100ms_flag = 1;
 }
 
 CY_ISR(adc_isr)
@@ -166,4 +131,10 @@ CY_ISR(adc_isr)
 CY_ISR(sync_counter_update_isr)
 {
     sync_counter_flag = 1;
+}
+
+CY_ISR(serial_tx_isr)
+{
+    service_serial_tx_flag = 1;
+    serial_service_tx_isr(&ser);
 }

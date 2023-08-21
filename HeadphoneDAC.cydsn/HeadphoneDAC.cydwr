@@ -397,6 +397,7 @@
       <Data key="fe5781ba-6c33-4da1-bdfa-18fc952146b8" value="i2s_tx_isr" />
     </Group>
     <Group key="Pin">
+      <Data key="9e662db4-c009-4747-b19d-d455dbb41836" value="sw" />
       <Data key="0412e7a3-7bb2-4490-8a7d-0675b098c5ba" value="i2s_lrclk" />
       <Data key="475d3cbe-adf7-446a-af68-da51fff0bbf3" value="mute" />
       <Data key="1425177d-0d0e-4468-8bcc-e638e5509a9b" value="ftdi_tx" />
@@ -3543,6 +3544,17 @@
     </Group>
   </Group>
   <Group key="Pin2">
+    <Group key="9e662db4-c009-4747-b19d-d455dbb41836">
+      <Group key="0">
+        <Data key="Port Format" value="2,3" />
+      </Group>
+      <Group key="1">
+        <Data key="Port Format" value="2,2" />
+      </Group>
+      <Group key="2">
+        <Data key="Port Format" value="2,1" />
+      </Group>
+    </Group>
     <Group key="0412e7a3-7bb2-4490-8a7d-0675b098c5ba">
       <Group key="0">
         <Data key="Port Format" value="2,5" />
@@ -3601,10 +3613,10 @@
     <Data key="CYDEV_DEBUGGING_DPS" value="SWD_SWV" />
     <Data key="CYDEV_DEBUGGING_XRES" value="False" />
     <Data key="CYDEV_ECC_ENABLE" value="False" />
-    <Data key="CYDEV_HEAP_SIZE" value="0x80" />
+    <Data key="CYDEV_HEAP_SIZE" value="4096" />
     <Data key="CYDEV_INSTRUCT_CACHE_ENABLED" value="True" />
     <Data key="CYDEV_PROTECTION_ENABLE" value="False" />
-    <Data key="CYDEV_STACK_SIZE" value="0x0800" />
+    <Data key="CYDEV_STACK_SIZE" value="2048" />
     <Data key="CYDEV_TEMPERATURE" value="0C - 85/125C" />
     <Data key="CYDEV_TRACE_ENABLED" value="False" />
     <Data key="CYDEV_USE_BUNDLED_CMSIS" value="True" />

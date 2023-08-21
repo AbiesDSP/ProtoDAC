@@ -69,7 +69,7 @@ class PSoCConfig(YAMLWizard):
             os.remove(cyfit)
 
         cmd = [
-            self.cyprjmgr_bin,
+            self.cyprjmgr_bin(),
             "-wrk",
             self.workspace,
             "-clean",
@@ -81,7 +81,7 @@ class PSoCConfig(YAMLWizard):
 
     def build(self):
         """Build all projects in the workspace"""
-        for prj in cfg.projects:
+        for prj in self.projects:
             cmd = [
                 self.cyprjmgr_bin(),
                 "-wrk",
