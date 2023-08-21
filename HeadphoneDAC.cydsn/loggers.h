@@ -1,3 +1,4 @@
+// All loggers used in this application.
 #pragma once
 #include "logging.h"
 

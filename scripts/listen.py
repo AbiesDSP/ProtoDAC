@@ -6,7 +6,7 @@ import argparse
 
 
 @contextmanager
-def open_d2xx(baud=1.152e6) -> FTD2XX:
+def open_d2xx(baud=1.536e6) -> FTD2XX:
     dev = ftd2xx.open()
 
     try:

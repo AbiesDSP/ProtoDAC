@@ -66,7 +66,7 @@ int main(void)
 
     // Configure serial
     serial_init(&ser, serial_rx_buffer, sizeof(serial_rx_buffer), serial_tx_buffer, sizeof(serial_tx_buffer));
-    tx_isr_StartEx(serial_tx_isr);
+    uart_tx_isr_StartEx(serial_tx_isr);
 
     // Configure serial logger
     log_handler_init_funcs(&serial_handler, serial_handler_write, NULL);
