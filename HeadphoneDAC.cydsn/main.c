@@ -71,7 +71,7 @@ int main(void)
     // Configure serial logger
     log_handler_init_funcs(&serial_handler, serial_handler_write, NULL);
     logger_init(&serial_log, &serial_handler, NULL);
-    serial_log.level = LOG_DEBUG;
+    serial_log.level = LOG_INFO;
 
     // Configure frame timer for usb synchronization.
     FrameCount_Start();
@@ -89,6 +89,10 @@ int main(void)
         if (usb_audio_out_update_flag)
         {
             usb_audio_out_update_flag = 0;
+            if (usb_audio_out_count != 288)
+            {
+                log_debug(&serial_log, "usb_count: %d\n", usb_audio_out_count);
+            }
 
 #if ENABLE_PROC
             n_samples = usb_audio_out_count / 6;
@@ -128,15 +132,13 @@ int main(void)
             sync_counter_flag = 0;
             
 #if USB_USE_SYNC_FB
-            // Magic numbers.
-            uint32_t new_usb_feedback = (float)sync_counter_read() / 3.0;
             // Update the feedback register
             uint8_t int_status = CyEnterCriticalSection();
-            sample_rate_feedback = new_usb_feedback;
+            sample_rate_feedback = sync_counter_read() / 3.0;
+            float sample_rate = sample_rate_feedback / 16.384;
+            float buf_percent = 100.0 * ((float)audio_out_buffer_size / AUDIO_TX_BUF_SIZE);
             CyExitCriticalSection(int_status);
 #endif      
-            float buf_percent = 100.0 * ((float)audio_out_buffer_size / AUDIO_TX_BUF_SIZE);
-            float sample_rate = sample_rate_feedback / 16.384;
             log_info(&serial_log, "tx_buffer: %2.0f%%, sample_rate_fb: %.2f  \r", buf_percent, sample_rate);
         }
 

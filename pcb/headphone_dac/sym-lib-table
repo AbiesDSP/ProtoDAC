@@ -1,0 +1,10 @@
+(sym_lib_table
+  (version 7)
+  (lib (name "audio_opamp")(type "Legacy")(uri "${FRANK_SYMBOL_DIR}/audio_opamp.lib")(options "")(descr ""))
+  (lib (name "audio_power")(type "Legacy")(uri "${FRANK_SYMBOL_DIR}/audio_power.lib")(options "")(descr ""))
+  (lib (name "audio_digital")(type "Legacy")(uri "${FRANK_SYMBOL_DIR}/audio_digital.lib")(options "")(descr ""))
+  (lib (name "microcontroller_arm")(type "Legacy")(uri "${FRANK_SYMBOL_DIR}/microcontroller_arm.lib")(options "")(descr ""))
+  (lib (name "audio_amplifier")(type "Legacy")(uri "${FRANK_SYMBOL_DIR}/audio_amplifier.lib")(options "")(descr ""))
+  (lib (name "headphone_dac_proto-rescue")(type "Legacy")(uri "${KIPRJMOD}/headphone_dac-rescue.lib")(options "")(descr ""))
+  (lib (name "psoc")(type "Legacy")(uri "${ABIES_SYMBOL_DIR}/psoc.lib")(options "")(descr ""))
+)

@@ -1,0 +1,4 @@
+(fp_lib_table
+  (version 7)
+  (lib (name "conn_prog")(type "KiCad")(uri "${FRANK_FP_DIR}/conn_prog.pretty")(options "")(descr ""))
+)

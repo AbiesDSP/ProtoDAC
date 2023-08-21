@@ -22,3 +22,9 @@ __pycache__
 *.rpt
 *.svd
 *.html
+
+*-backups
+*_autosave*
+*-cache*
+*-rescue
+*.kicad_prl
