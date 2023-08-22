@@ -130,11 +130,12 @@ int main(void)
         if (sync_counter_flag)
         {
             sync_counter_flag = 0;
+            CyDelayUs(10);
             
 #if USB_USE_SYNC_FB
             // Update the feedback register
             uint8_t int_status = CyEnterCriticalSection();
-            sample_rate_feedback = sync_counter_read() / 3.0;
+            sample_rate_feedback = sync_counter_read();
             float sample_rate = sample_rate_feedback / 16.384;
             float buf_percent = 100.0 * ((float)audio_out_buffer_size / AUDIO_TX_BUF_SIZE);
             CyExitCriticalSection(int_status);
