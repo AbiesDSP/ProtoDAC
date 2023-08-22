@@ -92,7 +92,11 @@ static inline void log_trace(const logger *log, const char *args_fmt, ...)
     va_list args;
     va_start(args, args_fmt);
 
-    log_entry_config config = {.level = LOG_TRACE, .args_fmt = args_fmt, .source_file = __FILE__};
+    log_entry_config config = {
+        .level = LOG_TRACE,
+        .source_file = __FILE__,
+        .args_fmt = args_fmt,
+    };
     log_(log, &config, args);
     va_end(args);
 }
@@ -103,7 +107,7 @@ static inline void log_trace(const logger *log, ...)
 }
 #endif
 
-#define log_debug(log, args_fmt, ...) _log_debug (log, __FILE__, args_fmt, ##__VA_ARGS__)
+#define log_debug(log, args_fmt, ...) _log_debug(log, __FILE__, args_fmt, ##__VA_ARGS__)
 static inline void _log_debug(const logger *log, const char *source_file, const char *args_fmt, ...)
 {
     va_list args;
@@ -119,7 +123,7 @@ static inline void _log_debug(const logger *log, const char *source_file, const 
     va_end(args);
 }
 
-#define log_info(log, args_fmt, ...) _log_info (log, __FILE__, args_fmt, ##__VA_ARGS__)
+#define log_info(log, args_fmt, ...) _log_info(log, __FILE__, args_fmt, ##__VA_ARGS__)
 static inline void _log_info(const logger *log, const char *source_file, const char *args_fmt, ...)
 {
     va_list args;
@@ -135,7 +139,7 @@ static inline void _log_info(const logger *log, const char *source_file, const c
     va_end(args);
 }
 
-#define log_warn(log, args_fmt, ...) _log_warn (log, __FILE__, args_fmt, ##__VA_ARGS__)
+#define log_warn(log, args_fmt, ...) _log_warn(log, __FILE__, args_fmt, ##__VA_ARGS__)
 static inline void _log_warn(const logger *log, const char *source_file, const char *args_fmt, ...)
 {
     va_list args;
@@ -166,4 +170,3 @@ static inline void _log_error(const logger *log, const char *source_file, const 
 
     va_end(args);
 }
-

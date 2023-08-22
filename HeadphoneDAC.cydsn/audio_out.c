@@ -11,9 +11,7 @@
 #include <DMA_BS_TX_dma.h>
 #include <DMA_I2S_TX_dma.h>
 
-#include <process_tx_isr.h>
 #include <i2s_tx_isr.h>
-#include <bs_tx_isr.h>
 
 #include <stdlib.h>
 

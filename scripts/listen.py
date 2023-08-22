@@ -6,13 +6,12 @@ import argparse
 
 
 @contextmanager
-def open_d2xx(baud=3.0e6) -> FTD2XX:
+def open_d2xx(baud: int = 3.0e6, latency: int = 16) -> FTD2XX:
     dev = ftd2xx.open()
-
     try:
         dev.setBaudRate(int(baud))
-        dev.setLatencyTimer(2)
-        dev.setTimeouts(1, 1)
+        dev.setLatencyTimer(latency)
+        dev.setTimeouts(1000, 1000)
         yield dev
     finally:
         dev.close()

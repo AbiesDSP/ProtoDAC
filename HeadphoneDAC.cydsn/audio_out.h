@@ -4,7 +4,7 @@
 #include <stdint.h>
 
 // Pre-allocated space for i2s tds.
-#define AUDIO_OUT_MAX_TDS 100
+#define AUDIO_OUT_MAX_TDS 64
 
 // Indicates that i2s is enabled and transmitting data. If it has underflowed, this will be cleared.
 #define AUDIO_OUT_STS_ACTIVE 0x01

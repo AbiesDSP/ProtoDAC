@@ -14,6 +14,7 @@ include(Catch)
 add_executable(run_all_tests
     test_logging.cpp
     test_list.cpp
+    test_filter.cpp
 )
 
 target_include_directories(run_all_tests PRIVATE
@@ -22,6 +23,7 @@ target_include_directories(run_all_tests PRIVATE
 target_link_libraries(run_all_tests
     logging
     list
+    filter
     Catch2::Catch2WithMain)
 
 # target_compile_definitions(run_all_tests PRIVATE "LOG_ENABLE_TRACE=$<IF:$<CONFIG:Debug>,1,0>")

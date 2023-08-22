@@ -7,8 +7,8 @@ from dataclasses import dataclass
 from dataclass_wizard import YAMLWizard
 
 
-def version_from_file(version_file: Path):
-    """Construct Version class from a c file."""
+def version_from_file(version_file: Path) -> str:
+    """Read the version from a file and return as a formatted string."""
 
     with open(version_file, "r") as f:
         alldata = f.read()
@@ -39,21 +39,12 @@ class PSoCConfig(YAMLWizard):
         if version_file.exists():
             self.version = version_from_file(version_file)
 
-        # # Modify the file paths to use the sub path and build types.
-        # self.update_file = (
-        #     Path(self.project) / self.sub_path / self.build_type / self.update_file
-        # )
-
-        # self.outputs = [
-        #     (Path(self.project) / self.sub_path / self.build_type / o)
-        #     for o in self.outputs
-        # ]
-
     def clean(self):
         """Deletes all generated sources, cyfit file, and runs Clean in PSoC Creator for all projects in the workspace."""
 
-        for prj in cfg.projects:
+        for prj in self.projects:
             prj_root = Path(prj)
+            # Delete all of generated source and cyfit file.
             generated_source_dir = prj_root / "Generated_Source"
             cyfit = prj_root / f"{prj_root.stem}.cyfit"
 
@@ -64,10 +55,11 @@ class PSoCConfig(YAMLWizard):
             print(f"Deleting {build_dir}")
             shutil.rmtree(build_dir, ignore_errors=True)
 
-        print(f"Deleting {cyfit}")
-        if cyfit.exists():
-            os.remove(cyfit)
+            if cyfit.exists():
+                print(f"Deleting {cyfit}")
+                os.remove(cyfit)
 
+        # Run the psoc clean command.
         cmd = [
             self.cyprjmgr_bin(),
             "-wrk",
@@ -89,13 +81,13 @@ class PSoCConfig(YAMLWizard):
                 "-build",
                 "-prj",
                 Path(prj).stem,
-                "-generateDescFiles",
                 "-c",
                 self.build_type,
             ]
             subprocess.run(cmd, check=True)
 
     def cyprjmgr_bin(self):
+        """Path to cyprjmgr cli tool."""
         return (
             Path(self.psoc_creator_location)
             / self.psoc_creator_version

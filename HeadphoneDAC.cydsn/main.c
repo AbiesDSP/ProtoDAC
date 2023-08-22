@@ -10,8 +10,6 @@
 
 // Enable processing data before transmitting.
 #define ENABLE_PROC 1
-// Disable asynchronous feedback updates.
-#define USB_USE_SYNC_FB 1
 
 volatile int adc_update_flag = 0;
 CY_ISR_PROTO(adc_isr);
@@ -23,8 +21,8 @@ volatile int service_serial_tx_flag = 0;
 CY_ISR_PROTO(serial_tx_isr);
 
 // Audio transmit buffer
-#define AUDIO_TX_TRANSFER_SIZE 288
-#define AUDIO_TX_N_TDS 16
+#define AUDIO_TX_TRANSFER_SIZE 1024
+#define AUDIO_TX_N_TDS 8
 #define AUDIO_TX_BUF_SIZE (AUDIO_TX_TRANSFER_SIZE * AUDIO_TX_N_TDS)
 static uint8_t audio_tx_buf[AUDIO_TX_BUF_SIZE];
 
@@ -53,7 +51,7 @@ int main(void)
     set_mute(AUDIO_ENABLED);
 
     // Configure USB
-    usb_start(FS48KHZ);
+    usb_start(48000);
 
     // Configure usb audio output.
     audio_out_config audio_tx_config = {
@@ -71,28 +69,24 @@ int main(void)
     // Configure serial logger
     log_handler_init_funcs(&serial_handler, serial_handler_write, NULL);
     logger_init(&serial_log, &serial_handler, NULL);
-    serial_log.level = LOG_INFO;
-
-    // Configure frame timer for usb synchronization.
-    FrameCount_Start();
-    sync_counter_start();
-    sync_counter_isr_StartEx(sync_counter_update_isr);
+    
+    serial_log.level = LOG_DEBUG;
 
     int n_samples = 0;
     float volume_gain = 1.0;
     float lpf_gain = 0.0;
     static float lpf_l_last = 0, lpf_r_last = 0;
-
+    
+    // Configure frame timer for usb synchronization.
+    sync_counter_start(48000);
+    sync_counter_isr_StartEx(sync_counter_update_isr);
+    
     while (42)
-    {
+    {   
         // Process audio here.
         if (usb_audio_out_update_flag)
         {
             usb_audio_out_update_flag = 0;
-            if (usb_audio_out_count != 288)
-            {
-                log_debug(&serial_log, "usb_count: %d\n", usb_audio_out_count);
-            }
 
 #if ENABLE_PROC
             n_samples = usb_audio_out_count / 6;
@@ -126,21 +120,20 @@ int main(void)
             usb_service();
         }
 
-        // Update USB Measured FS buffer
+        // New feedback update.
         if (sync_counter_flag)
         {
             sync_counter_flag = 0;
-            CyDelayUs(10);
+            uint32_t sync_fb = sync_counter_read();
             
-#if USB_USE_SYNC_FB
             // Update the feedback register
-            uint8_t int_status = CyEnterCriticalSection();
-            sample_rate_feedback = sync_counter_read();
-            float sample_rate = sample_rate_feedback / 16.384;
+            usb_update_feedback(sync_fb);
+            
+            // Sample rate in hz.
+            float sample_rate = (1000.0 * sync_fb) / 16384.0;
+            // Tx buffer status.
             float buf_percent = 100.0 * ((float)audio_out_buffer_size / AUDIO_TX_BUF_SIZE);
-            CyExitCriticalSection(int_status);
-#endif      
-            log_info(&serial_log, "tx_buffer: %2.0f%%, sample_rate_fb: %.2f  \r", buf_percent, sample_rate);
+            log_debug(&serial_log, "tx_buffer: %2.0f%%, sample_rate_fb: %.2f  \r", buf_percent, sample_rate);
         }
 
         // Transmit analog data to fpga.
@@ -150,7 +143,7 @@ int main(void)
             serial_service_tx_isr(&ser);
         }
 
-        // Update adc low-pass filter/oversampling
+        // New adc data.
         if (adc_update_flag)
         {
             adc_update_flag = 0;

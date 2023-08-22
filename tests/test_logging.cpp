@@ -31,8 +31,7 @@ TEST_CASE("Logging Memory", "[logging]")
     mem_log_handler_init(&some_mem_handler, some_mem, some_mem_size);
 
     log_formatter formatter;
-    sprintf_formatter_init(&formatter, "%s: ", "%d");
-    formatter.delim = '\n';
+    sprintf_formatter_init(&formatter, "%s: ");
 
     logger log;
     logger_init(&log, &some_mem_handler.base, &formatter);
@@ -40,12 +39,12 @@ TEST_CASE("Logging Memory", "[logging]")
     log.level = LOG_TRACE;
 
     int some_data = 42;
-    log_trace(&log, some_data);
+    log_trace(&log, "%d", some_data);
     // printf((char *)some_mem);
-    log_debug(&log, some_data);
-    log_info(&log, some_data);
-    log_warn(&log, some_data);
-    log_error(&log, some_data, "Extra");
+    log_debug(&log, "%d", some_data);
+    log_info(&log, "%d", some_data);
+    log_warn(&log, "%d", some_data);
+    log_error(&log, "%d", some_data, "Extra");
 
     // Print it?
     printf((char *)some_mem);
