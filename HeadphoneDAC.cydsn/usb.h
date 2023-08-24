@@ -1,5 +1,5 @@
 #pragma once
-#include <USBFS.h>
+#include <cytypes.h>
 
 #define USBFS_AUDIO_DEVICE 0
 #define AUDIO_INTERFACE 1

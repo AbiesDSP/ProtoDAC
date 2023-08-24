@@ -1,5 +1,5 @@
 #include "usb.h"
-#include "audio_out.h"
+#include "audio_tx.h"
 #include "project.h"
 
 volatile int usb_audio_out_update_flag = 0;
@@ -28,9 +28,9 @@ static inline void unpack_feedback(uint32_t feedback)
 }
 
 void usb_start(uint32_t _sample_rate)
-{   
+{
     sample_rate = _sample_rate;
-    
+
     // Set initial feedback value.
     unpack_feedback(fs_to_feedback(sample_rate));
 
@@ -98,19 +98,19 @@ static uint32_t running_sum = 0;
 static int feedback_iter = 0;
 
 uint32_t usb_update_feedback(uint32_t feedback)
-{   
+{
     running_sum += (feedback - rolling_average_buf[feedback_iter]);
     rolling_average_buf[feedback_iter++] = feedback;
-    
+
     if (feedback_iter == N_AVERAGE)
     {
         feedback_iter = 0;
-        
+
         uint32_t rolling_average = running_sum >> 4;
         unpack_feedback(rolling_average);
-        
+
         return rolling_average;
     }
-    
+
     return 0;
 }

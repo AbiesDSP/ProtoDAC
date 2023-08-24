@@ -14,8 +14,8 @@ def main():
     cfg = PSoCConfig.from_yaml_file("HeadphoneDAC.yaml")
     if args.clean:
         cfg.clean()
-    if args.build:
-        cfg.build()
+        # if args.build:
+    cfg.build()
 
 
 if __name__ == "__main__":

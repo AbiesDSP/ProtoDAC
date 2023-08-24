@@ -513,6 +513,15 @@
     </Group>
   </Group>
   <Data key="DataVersionKey" value="2" />
+  <Group key="DMA">
+    <Data key="82aef2f5-e888-4817-89f3-2ab886f47c65" value="1" />
+    <Data key="719d32b8-eccd-4c87-b538-d66eed4a4a05" value="1" />
+    <Data key="792afbba-ed95-40c4-9ab4-698dfadcdc8b" value="1" />
+    <Data key="3542670e-22f7-45f6-8293-b10e69d1dd7f" value="4" />
+    <Data key="c0065ef1-1b4a-4c27-bd7a-de833fd58b42/29822253-f21c-49b7-aa58-0d8c2ac4d26a" value="1" />
+    <Data key="c0065ef1-1b4a-4c27-bd7a-de833fd58b42/fc3f36ff-95ed-4ea3-ab7d-e6c18368d0fc" value="2" />
+    <Data key="c2728197-96d4-42d1-ae00-de7ccb106a02" value="4" />
+  </Group>
   <Group key="DWRInstGuidMapping">
     <Group key="Clock">
       <Data key="1eabcdda-dbb5-4583-90f0-6d528b35a289" value="sof_stretch_clk" />
@@ -526,6 +535,18 @@
       <Data key="c83f3d66-0b4a-4835-96d1-a3a3a67a9d15" value="byte_swap_clk" />
       <Data key="e7b967a5-8055-480c-8e67-ade950e48ced" value="i2s_mclk_clk" />
       <Data key="f4194983-62d8-4628-a0df-8743a56e3c5b" value="uart_clock" />
+    </Group>
+    <Group key="DMA">
+      <Data key="82aef2f5-e888-4817-89f3-2ab886f47c65" value="DMA_I2S_TX" />
+      <Data key="719d32b8-eccd-4c87-b538-d66eed4a4a05" value="DMA_BS_RX" />
+      <Data key="792afbba-ed95-40c4-9ab4-698dfadcdc8b" value="DMA_BS_TX" />
+      <Data key="3542670e-22f7-45f6-8293-b10e69d1dd7f" value="DMATxUART" />
+      <Data key="c0065ef1-1b4a-4c27-bd7a-de833fd58b42/65e02280-1265-4427-8c57-372cc4ad3f0e" value="USBFS_ep6" />
+      <Data key="c0065ef1-1b4a-4c27-bd7a-de833fd58b42/09221e01-4fc0-48fd-8cd5-4ac8043cee0b" value="USBFS_ep2" />
+      <Data key="c0065ef1-1b4a-4c27-bd7a-de833fd58b42/29822253-f21c-49b7-aa58-0d8c2ac4d26a" value="USBFS_ep1" />
+      <Data key="c0065ef1-1b4a-4c27-bd7a-de833fd58b42/d49052e4-3d62-42ed-8fe3-debd66bb1cf2" value="USBFS_ep4" />
+      <Data key="c0065ef1-1b4a-4c27-bd7a-de833fd58b42/fc3f36ff-95ed-4ea3-ab7d-e6c18368d0fc" value="USBFS_ep3" />
+      <Data key="c2728197-96d4-42d1-ae00-de7ccb106a02" value="DMARxUART" />
     </Group>
     <Group key="Interrupt">
       <Data key="3b229842-b290-4b7c-8bcb-67befa05cf93" value="sync_counter_isr" />

@@ -1,17 +1,14 @@
+#include "project_config.h"
+
 #include "project.h"
-
 #include "usb.h"
-#include "audio_out.h"
+#include "audio_tx.h"
 #include "audio_proc.h"
-
+#include "muter.h"
 #include "loggers.h"
-
 #include "serial.h"
 
 #define ever (;;)
-
-// Enable processing data before transmitting.
-#define ENABLE_PROC 1
 
 volatile int adc_update_flag = 0;
 CY_ISR_PROTO(adc_isr);
@@ -19,32 +16,24 @@ CY_ISR_PROTO(adc_isr);
 volatile int sync_counter_flag = 0;
 CY_ISR_PROTO(sync_counter_update_isr);
 
-// Audio transmit buffer
-#define AUDIO_TX_TRANSFER_SIZE 288
-#define AUDIO_TX_N_TDS 32
-#define AUDIO_TX_BUF_SIZE (AUDIO_TX_TRANSFER_SIZE * AUDIO_TX_N_TDS)
 static uint8_t audio_tx_buf[AUDIO_TX_BUF_SIZE];
 
 // Audio processing buffers.
 static float audio_left[AUDIO_PROC_BUF_SIZE];
 static float audio_right[AUDIO_PROC_BUF_SIZE];
-//
 static uint8_t source_tx_buf[USB_MAX_BUF_SIZE];
 
 // Serial library to send/receive over the uart
-#define SERIAL_TX_BUFFER_SIZE 1024
 static uint8_t serial_tx_buffer[SERIAL_TX_BUFFER_SIZE];
 CY_ISR_PROTO(uart_tx_isr);
 
 SerialTx serial_tx;
 
-#define SERIAL_RX_BUFFER_SIZE 1024
 static uint8_t serial_rx_buffer[SERIAL_RX_BUFFER_SIZE];
 CY_ISR_PROTO(flush_isr);
 
 SerialRx serial_rx;
 
-#define SERIAL_MSG_BUF_SIZE 1024
 static uint8_t serial_msg_buf[SERIAL_MSG_BUF_SIZE];
 
 // Send log messages over the serial port.
@@ -53,11 +42,14 @@ SerialLogHandler serial_log_handler;
 
 int main(void)
 {
+#if !TEST_BUILD
     CyGlobalIntEnable;
+#endif
+
     // Configure USB
     sync_counter_isr_StartEx(sync_counter_update_isr);
     sync_counter_start();
-    
+
     // Start UART hardware
     UART_Start();
 
@@ -102,7 +94,7 @@ int main(void)
     serial_log_handler_init(&serial_log_handler, &serial_tx);
     logger_init(&serial_log, &serial_log_handler.handler, NULL);
 
-    serial_log.level = LOG_INFO;
+    serial_log.level = GLOBAL_LOG_LEVEL;
 
     int n_samples = 0;
     float volume_gain = 1.0;
@@ -141,13 +133,13 @@ int main(void)
             audio_out_transmit(source_tx_buf, usb_audio_out_count);
 #endif
         }
-        
+
         // New Serial Command
         int rx_size = serial_rx_buffer_size(&serial_rx);
         if (rx_size)
         {
             serial_rx_receive(&serial_rx, serial_msg_buf, rx_size);
-            serial_msg_buf[rx_size] = 0;// Make sure it has a delimeter...
+            serial_msg_buf[rx_size] = 0; // Make sure it has a delimeter...
             log_info(&serial_log, "%s", serial_msg_buf);
         }
 

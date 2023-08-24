@@ -1,6 +1,4 @@
 #pragma once
-#include <I2S.h>
-#include <muter.h>
 #include <stdint.h>
 
 // Pre-allocated space for i2s tds.
@@ -34,19 +32,9 @@ extern volatile uint8_t audio_out_status;
 void audio_out_init(const AudioTxConfig *config);
 
 // Call this to write data to the transmit buffer.
-void audio_out_transmit(const uint8_t *source_data, uint16_t amount);
+void audio_out_transmit(const uint8_t *source_data, int amount);
 
 // Start and stop audio playback and I2S.
-static inline void audio_out_enable(void)
-{
-    audio_out_status |= AUDIO_OUT_STS_ACTIVE;
-    I2S_EnableTx();
-    set_mute(AUDIO_ENABLED);
-}
+void audio_out_enable(void);
 
-static inline void audio_out_disable(void)
-{
-    audio_out_status &= ~AUDIO_OUT_STS_ACTIVE;
-    I2S_DisableTx();
-    set_mute(AUDIO_MUTED);
-}
+void audio_out_disable(void);

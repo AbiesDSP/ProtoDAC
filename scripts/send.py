@@ -1,10 +1,9 @@
 from ftdi import open_d2xx
-from contextlib import contextmanager
 import sys
 
 
 def main():
-    """"""
+    """Send data and receive an echo"""
     args = sys.argv[1:]
     HEADER_SIZE = 19
 

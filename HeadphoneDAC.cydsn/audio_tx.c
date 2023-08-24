@@ -1,4 +1,4 @@
-#include "audio_out.h"
+#include "audio_tx.h"
 #include "muter.h"
 #include "loggers.h"
 
@@ -103,7 +103,7 @@ void audio_out_init(const AudioTxConfig *_config)
 }
 
 // Send audio data to the byte swap component, which then gets sent to the transmit buffer.
-void audio_out_transmit(const uint8_t *audio_buf, uint16_t amount)
+void audio_out_transmit(const uint8_t *audio_buf, int amount)
 {
     // If we're in an overflow state and above half full, drop any incoming data.
     if (audio_out_status & AUDIO_OUT_STS_OVERFLOW)
@@ -147,6 +147,20 @@ void audio_out_transmit(const uint8_t *audio_buf, uint16_t amount)
     {
         audio_out_enable();
     }
+}
+
+void audio_out_enable(void)
+{
+    audio_out_status |= AUDIO_OUT_STS_ACTIVE;
+    I2S_EnableTx();
+    set_mute(AUDIO_ENABLED);
+}
+
+void audio_out_disable(void)
+{
+    audio_out_status &= ~AUDIO_OUT_STS_ACTIVE;
+    I2S_DisableTx();
+    set_mute(AUDIO_MUTED);
 }
 
 /* This isr is when each I2S transfer completes. This will happen
