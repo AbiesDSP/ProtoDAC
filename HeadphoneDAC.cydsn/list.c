@@ -1,17 +1,17 @@
 #include "list.h"
 #include <stdlib.h>
 
-void list_init(list *self)
+void list_init(List *self)
 {
     self->begin = NULL;
     self->end = NULL;
     self->size = 0;
 }
 
-void list_destroy(list *self)
+void list_destroy(List *self)
 {
-    list_node *it = self->begin;
-    list_node *next;
+    ListNode *it = self->begin;
+    ListNode *next;
 
     while (it != NULL)
     {
@@ -21,11 +21,11 @@ void list_destroy(list *self)
     }
 }
 
-int list_insert(list *self, const void *ref, int n)
+int list_insert(List *self, const void *ref, int n)
 {
     // Allocate a node
-    list_node *node = malloc(sizeof(*node));
-    node->ref = ref;
+    ListNode *node = malloc(sizeof(*node));
+    node->ref = (void *)ref;
     node->next = NULL;
     node->prev = NULL;
 
@@ -38,7 +38,7 @@ int list_insert(list *self, const void *ref, int n)
     else
     {
         // Find the position where we want to insert.
-        list_node *pos = list_iter(self, n);
+        ListNode *pos = list_iter(self, n);
         if (n >= 0)
         {
             node->next = pos;
@@ -71,13 +71,13 @@ int list_insert(list *self, const void *ref, int n)
         }
     }
     self->size++;
-    
+
     return 0;
 }
 
-list_node *list_iter(const list *self, int n)
+ListNode *list_iter(const List *self, int n)
 {
-    list_node *node = n >= 0 ? self->begin : self->end;
+    ListNode *node = n >= 0 ? self->begin : self->end;
     if (n >= 0)
     {
         for (int i = 0; i < n; i++)

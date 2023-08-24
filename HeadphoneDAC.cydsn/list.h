@@ -3,44 +3,44 @@
 #include <stdint.h>
 
 /*
-    Doubly linked list.
+    Doubly linked List.
 */
-typedef struct list_node list_node;
-typedef struct list list;
+typedef struct ListNode ListNode;
+typedef struct List List;
 
-struct list_node
+struct ListNode
 {
-    const void *ref;
-    list_node *next;
-    list_node *prev;
+    void *ref;
+    ListNode *next;
+    ListNode *prev;
 };
 
-struct list
+struct List
 {
-    list_node *begin;
-    list_node *end;
+    ListNode *begin;
+    ListNode *end;
     int size;
 };
 
-void list_init(list *self);
-void list_destroy(list *self);
+void list_init(List *self);
+void list_destroy(List *self);
 
-list_node *list_iter(const list *self, int n);
-int list_insert(list *self, const void *ref, int n);
+ListNode *list_iter(const List *self, int n);
+int list_insert(List *self, const void *ref, int n);
 
-static inline int list_append(list *self, const void *ref)
+static inline int list_append(List *self, const void *ref)
 {
     return list_insert(self, ref, -1);
 }
 
-static inline int list_prepend(list *self, const void *ref)
+static inline int list_prepend(List *self, const void *ref)
 {
     return list_insert(self, ref, 0);
 }
 
-int list_extend(list *self, const list *other);
+int list_extend(List *self, const List *other);
 
-static inline const void *list_index(const list *self, int n)
+static inline void *list_index(const List *self, int n)
 {
     return list_iter(self, n)->ref;
 }

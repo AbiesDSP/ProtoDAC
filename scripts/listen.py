@@ -1,46 +1,32 @@
-import ftd2xx
-from ftd2xx import FTD2XX
-
+from ftdi import open_d2xx
 from contextlib import contextmanager
 import argparse
 
 
-@contextmanager
-def open_d2xx(baud: int = 3.0e6, latency: int = 16) -> FTD2XX:
-    dev = ftd2xx.open()
-    try:
-        dev.setBaudRate(int(baud))
-        dev.setLatencyTimer(latency)
-        dev.setTimeouts(1000, 1000)
-        yield dev
-    finally:
-        dev.close()
-
-
 parser = argparse.ArgumentParser()
-parser.add_argument("--delim", default="\n")
+parser.add_argument("--delim", default="\n", type=str)
+
+
+class Args:
+    delim: str
 
 
 def main():
     """"""
-    args = parser.parse_args()
-    delim = args.delim.encode()
-    if delim == b"\\r":
-        delim = b"\r"
+    args = parser.parse_args(namespace=Args)
+    if args.delim.startswith("\\"):
+        args.delim = args.delim[1:]
 
-    with open_d2xx() as ftdi:
-        ftdi: FTD2XX
-
+    with open_d2xx(read_timeout=0.1) as ftdi:
         rx_data = bytearray()
         while True:
-            rx_size = ftdi.getQueueStatus()
-            if rx_size > 0:
-                rx_data.extend(ftdi.read(rx_size))
-                spl = rx_data.split(delim, 1)
-                # New line
-                if len(spl) > 1:
-                    rx_data = spl[1]
-                    print(spl[0].decode(), end=delim.decode())
+            READ_SIZE = 32
+            rx_data.extend(ftdi.read(READ_SIZE))
+            spl = rx_data.split(args.delim.encode(), 1)
+            # New line
+            if len(spl) > 1:
+                rx_data = spl[1]
+                print(spl[0].decode(), end=args.delim)
 
 
 if __name__ == "__main__":

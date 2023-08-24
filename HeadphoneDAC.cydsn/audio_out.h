@@ -12,8 +12,8 @@
 #define AUDIO_OUT_STS_OVERFLOW 0x02
 
 // Configure audio output.
-typedef struct audio_out_config audio_out_config;
-struct audio_out_config
+typedef struct AudioTxConfig AudioTxConfig;
+struct AudioTxConfig
 {
     // Size of dma transactions. audio_out_buf_size updates in this increment size.
     int transfer_size;
@@ -31,7 +31,7 @@ extern volatile int audio_out_buffer_size;
 extern volatile uint8_t audio_out_status;
 
 // Start up DMA channels, I2S, and ISRs.
-void audio_out_init(const audio_out_config *config);
+void audio_out_init(const AudioTxConfig *config);
 
 // Call this to write data to the transmit buffer.
 void audio_out_transmit(const uint8_t *source_data, uint16_t amount);

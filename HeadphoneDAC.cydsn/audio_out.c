@@ -60,7 +60,7 @@ static void i2s_dma_config(void);
 CY_ISR_PROTO(i2s_tx_done_isr);
 
 // Configuration info.
-static const audio_out_config *config;
+static const AudioTxConfig *config;
 
 // buffer management levels.
 static int active_limit = 0;
@@ -69,7 +69,7 @@ static int overflow_limit = 0;
 static int buffer_capacity = 0;
 
 // Configure and start up all components for audio
-void audio_out_init(const audio_out_config *_config)
+void audio_out_init(const AudioTxConfig *_config)
 {
     config = _config;
 
@@ -83,10 +83,10 @@ void audio_out_init(const audio_out_config *_config)
     // Send source data to the byte swap component
     source_dma_ch = DMA_BS_RX_DmaInitialize(1u, 1u, HI16(CYDEV_SRAM_BASE), HI16(CYDEV_PERIPH_BASE));
     source_dma_td[0] = CyDmaTdAllocate();
-    
+
     // Configure byte swap to transfer data to the tx_buffer.
     bs_dma_config();
-    
+
     // Initialize the i2s modules
     i2s_dma_config();
     i2s_tx_isr_StartEx(i2s_tx_done_isr);
@@ -116,7 +116,7 @@ void audio_out_transmit(const uint8_t *audio_buf, uint16_t amount)
         // Once we're < half full, we can clear the overflow state and start sending data.
         audio_out_status &= ~AUDIO_OUT_STS_OVERFLOW;
     }
-    
+
     // Start a dma transaction to send data to the byte swap component
     configure_source_dma(audio_buf, amount);
 
@@ -124,7 +124,7 @@ void audio_out_transmit(const uint8_t *audio_buf, uint16_t amount)
     int int_status = CyEnterCriticalSection();
     audio_out_buffer_size += amount;
     CyExitCriticalSection(int_status);
-    
+
     /* Tx buffer has overflowed, or is about to.
      * How can we handle this?
      * 1. Drop the data on the floor.
@@ -141,7 +141,7 @@ void audio_out_transmit(const uint8_t *audio_buf, uint16_t amount)
         audio_out_status |= AUDIO_OUT_STS_OVERFLOW;
         log_warn(&serial_log, "Audio Out Overflow!\n");
     }
-    
+
     // Once the buffer is half full, enable the i2s output.
     if (!(audio_out_status & AUDIO_OUT_STS_ACTIVE) && audio_out_buffer_size >= active_limit)
     {
@@ -172,7 +172,7 @@ static void bs_dma_config(void)
 
     uint8_t td_config = TD_INC_DST_ADR | DMA_BS_TX__TD_TERMOUT_EN;
     const uint8_t *dst = config->buffer;
-    
+
     // Use the max transfer size for byte swap transfers.
     int remaining = buffer_capacity;
     uint8_t *td = bs_dma_td;
@@ -181,22 +181,22 @@ static void bs_dma_config(void)
     {
         bs_dma_td[i] = CyDmaTdAllocate();
     }
-    
+
     // Infinite loop of chained tds. Use up to the max allowed td size.
     while (remaining > 0)
     {
         int transfer_size = remaining > DMA_MAX_TRANSFER_SIZE ? DMA_MAX_TRANSFER_SIZE : remaining;
         remaining -= transfer_size;
-        
+
         uint8_t next_td = remaining == 0 ? bs_dma_td[0] : td[1];
-        
+
         CyDmaTdSetConfiguration(*td, transfer_size, next_td, td_config);
         CyDmaTdSetAddress(*td, LO16((uint32_t)byte_swap_tx_fifo_out_ptr), LO16((uint32_t)dst));
-        
+
         dst += transfer_size;
         td++;
     }
-    
+
     CyDmaChSetInitialTd(bs_dma_ch, bs_dma_td[0]);
     CyDmaChEnable(bs_dma_ch, 1u);
 }

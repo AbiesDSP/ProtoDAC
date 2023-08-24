@@ -247,9 +247,9 @@
         <Data key="check_tolerance" value="False" />
         <Data key="clock_version" value="v1" />
         <Data key="derive_type" value="NAMED_FREQ" />
-        <Data key="desired_freq" value="24" />
+        <Data key="desired_freq" value="12" />
         <Data key="desired_unit" value="6" />
-        <Data key="divider" value="3" />
+        <Data key="divider" value="6" />
         <Data key="domain" value="DIGITAL" />
         <Data key="enabled" value="True" />
         <Data key="minus_accuracy" value="0.001" />
@@ -361,7 +361,7 @@
         <Data key="desired_freq" value="0" />
         <Data key="desired_unit" value="0" />
         <Data key="divider" value="1" />
-        <Data key="domain" value="DIGITAL" />
+        <Data key="domain" value="0" />
         <Data key="enabled" value="True" />
         <Data key="minus_accuracy" value="0.001" />
         <Data key="minus_tolerance" value="0" />

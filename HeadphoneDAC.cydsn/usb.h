@@ -42,4 +42,4 @@ CY_ISR_PROTO(usb_audio_out_fb_isr);
 void usb_service(void);
 
 // Update feedback register. Count the number of 12.288Mhz clock cycles in 128 usb sof pulses.
-void usb_update_feedback(uint32_t feedback);
+uint32_t usb_update_feedback(uint32_t feedback);

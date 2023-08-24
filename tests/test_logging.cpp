@@ -6,7 +6,7 @@ extern "C"
 
 TEST_CASE("Logging Basics", "[.][logging_basic]")
 {
-    logger log;
+    Logger log;
     logger_init(&log, stdout_log_handler, default_log_formatter);
 
     log.level = LOG_TRACE;
@@ -27,13 +27,13 @@ TEST_CASE("Logging Memory", "[logging]")
         some_mem[i] = 0;
     }
 
-    mem_log_handler some_mem_handler;
-    mem_log_handler_init(&some_mem_handler, some_mem, some_mem_size);
+    SramLogHandler some_mem_handler;
+    sram_log_handler_init(&some_mem_handler, some_mem, some_mem_size);
 
-    log_formatter formatter;
+    LogFormatter formatter;
     sprintf_formatter_init(&formatter, "%s: ");
 
-    logger log;
+    Logger log;
     logger_init(&log, &some_mem_handler.base, &formatter);
 
     log.level = LOG_TRACE;

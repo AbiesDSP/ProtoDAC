@@ -6,7 +6,7 @@ extern "C"
 
 TEST_CASE("List Basics", "[list]")
 {
-    list l;
+    List l;
 
     list_init(&l);
 
@@ -23,7 +23,7 @@ TEST_CASE("List Basics", "[list]")
 
     {
         int i = 0;
-        for (list_node *it = list_iter(&l, 0); it != NULL; it = it->next, i++)
+        for (ListNode *it = list_iter(&l, 0); it != NULL; it = it->next, i++)
         {
             int *xref = (int *)it->ref;
             REQUIRE(*xref == x[i]);

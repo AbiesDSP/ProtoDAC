@@ -16,7 +16,7 @@ else()
     target_compile_definitions(logging PRIVATE LOG_ENABLE_TRACE=0)
 endif()
 
-add_library(serial serial.c)
+add_library(serial serial.c serial_tx.c serial_rx.c serial_logger.c)
 
 add_library(audio_proc audio_proc.c)
 

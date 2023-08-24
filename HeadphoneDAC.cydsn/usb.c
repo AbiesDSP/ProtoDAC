@@ -2,6 +2,10 @@
 #include "audio_out.h"
 #include "project.h"
 
+volatile int usb_audio_out_update_flag = 0;
+volatile int usb_audio_out_count = 0;
+uint8_t usb_audio_out_buf[USB_MAX_BUF_SIZE];
+
 volatile uint8_t fb_data[3];
 static uint32_t sample_rate = 0;
 
@@ -13,10 +17,6 @@ static inline uint32_t fs_to_feedback(uint32_t sample_rate)
 {
     return (16384 * sample_rate) / 1000;
 }
-
-volatile int usb_audio_out_update_flag = 0;
-volatile int usb_audio_out_count = 0;
-uint8_t usb_audio_out_buf[USB_MAX_BUF_SIZE];
 
 static inline void unpack_feedback(uint32_t feedback)
 {
@@ -81,8 +81,7 @@ void usb_service(void)
                 USBFS_LoadInEP(AUDIO_FB_EP, (const uint8_t *)fb_data, 3);
                 USBFS_LoadInEP(AUDIO_FB_EP, USBFS_NULL, 3);
             }
-            // Initialize feedback
-            usb_update_feedback(fs_to_feedback(sample_rate));
+            // Initialize feedback for new sample rate
         }
         if (usb_alt_setting[USB_IN_IFACE_INDEX] != USBFS_GetInterfaceSetting(2))
         {
@@ -92,7 +91,26 @@ void usb_service(void)
     }
 }
 
-void usb_update_feedback(uint32_t feedback)
-{
-    unpack_feedback(feedback);
+// Running average over 8 128ms captures. 1.024 seconds.
+#define N_AVERAGE 8
+static uint32_t rolling_average_buf[N_AVERAGE];
+static uint32_t running_sum = 0;
+static int feedback_iter = 0;
+
+uint32_t usb_update_feedback(uint32_t feedback)
+{   
+    running_sum += (feedback - rolling_average_buf[feedback_iter]);
+    rolling_average_buf[feedback_iter++] = feedback;
+    
+    if (feedback_iter == N_AVERAGE)
+    {
+        feedback_iter = 0;
+        
+        uint32_t rolling_average = running_sum >> 4;
+        unpack_feedback(rolling_average);
+        
+        return rolling_average;
+    }
+    
+    return 0;
 }
