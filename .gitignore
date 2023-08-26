@@ -28,3 +28,13 @@ __pycache__
 *-cache*
 *-rescue
 *.kicad_prl
+
+# FreeRTOS ignores
+FreeRTOS/Demo
+FreeRTOS/Test
+FreeRTOS/links
+FreeRTOS/Source/portable/*
+!FreeRTOS/Source/portable/GCC
+FreeRTOS/Source/portable/GCC/*
+!FreeRTOS/Source/portable/GCC/ARM_CM3
+!FreeRTOS/Source/portable/MemMang

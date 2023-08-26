@@ -10,12 +10,11 @@ typedef struct Filter
     FilterProcess process;
 } Filter;
 
-typedef struct FilterChain FilterChain;
-struct FilterChain
+typedef struct FilterChain
 {
     List filters;
     float *proc_buf;
-};
+} FilterChain;
 
 void filter_init(Filter *f, FilterProcess process);
 

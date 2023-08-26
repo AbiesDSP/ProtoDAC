@@ -53,7 +53,7 @@ int unpack_usb_data_float(const uint8_t *usb_buf, int n_samples, float *dst, int
     for (int i = 0; i < n_samples; i++)
     {
         sample = unpack_sample(src);
-        dst[i] = (float)sample / (float)INT32_MAX;
+        dst[i] = sample >= 0 ? (float)sample / (float)INT32_MAX : (float)sample / (float)((float)INT32_MAX + 1);
         src += 6;
     }
 
@@ -67,7 +67,7 @@ void pack_usb_data_float(uint8_t *usb_buf, int n_samples, const float *src, int 
     int32_t sample;
     for (int i = 0; i < n_samples; i++)
     {
-        sample = src[i] * (float)INT32_MAX;
+        sample = src[i] >= 0 ? src[i] * (float)INT32_MAX : src[i] * (float)((float)INT32_MAX + 1);
         pack_sample(sample, dst);
         dst += 6;
     }
@@ -87,7 +87,7 @@ void lpf_exp(const float *src, float *dst, int n_samples, float a, float *last)
     float b = 1 - a;
     for (int i = 0; i < n_samples; i++)
     {
-        y = y * a + b*src[i];
+        y = y * a + b * src[i];
         dst[i] = y;
     }
     *last = y;

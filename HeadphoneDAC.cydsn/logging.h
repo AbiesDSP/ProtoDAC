@@ -1,5 +1,5 @@
 #pragma once
-#include "list.h"
+#include "list2.h"
 #include "cptr.h"
 
 #include <stdarg.h>
@@ -12,12 +12,6 @@ enum LogLevel
     LOG_WARN,
     LOG_ERROR
 };
-
-extern const char *log_level_strs[];
-static inline const char *log_level2str(enum LogLevel level)
-{
-    return log_level_strs[level];
-}
 
 // Log handlers will write/read the formatted message to the physical interface. ram, stdout, etc.
 typedef struct LogHandler LogHandler;

@@ -1,4 +1,4 @@
-#include "list.h"
+#include "list2.h"
 #include <stdlib.h>
 
 void list_init(List *self)
@@ -10,7 +10,7 @@ void list_init(List *self)
 
 void list_destroy(List *self)
 {
-    ListNode *it = self->begin;
+    ListNode *it = (ListNode *)self->begin;
     ListNode *next;
 
     while (it != NULL)
@@ -77,7 +77,7 @@ int list_insert(List *self, const void *ref, int n)
 
 ListNode *list_iter(const List *self, int n)
 {
-    ListNode *node = n >= 0 ? self->begin : self->end;
+    const ListNode *node = n >= 0 ? self->begin : self->end;
     if (n >= 0)
     {
         for (int i = 0; i < n; i++)
@@ -92,5 +92,5 @@ ListNode *list_iter(const List *self, int n)
             node = node->prev;
         }
     }
-    return node;
+    return (ListNode *)node;
 }

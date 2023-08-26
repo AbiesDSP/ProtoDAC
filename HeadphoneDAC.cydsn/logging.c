@@ -14,6 +14,10 @@ const char *log_level_strs[] = {
     "WARN ",
     "ERROR",
 };
+static inline const char *log_level2str(enum LogLevel level)
+{
+    return log_level_strs[level];
+}
 
 int log_handler_init_funcs(LogHandler *handler, LogHandlerWrite write, LogHandlerRead read)
 {
@@ -97,7 +101,7 @@ void log_(const Logger *log, const LogEntryConfig *config, va_list args)
         int amount = log->formatter->format(log->formatter, message_buf, config, args);
 
         LogHandler *handler;
-        for (ListNode *it = log->handlers.begin; it != NULL; it = it->next)
+        for (const ListNode *it = log->handlers.begin; it != NULL; it = it->next)
         {
             handler = (LogHandler *)it->ref;
             handler->write(handler, message_buf, amount);

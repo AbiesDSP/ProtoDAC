@@ -17,8 +17,8 @@ struct ListNode
 
 struct List
 {
-    ListNode *begin;
-    ListNode *end;
+    const ListNode *begin;
+    const ListNode *end;
     int size;
 };
 
