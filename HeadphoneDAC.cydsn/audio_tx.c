@@ -57,8 +57,8 @@ static void i2s_dma_config(void);
 CY_ISR_PROTO(i2s_tx_done_isr);
 
 static uint8_t tx_buffer[AUDIO_TX_BUF_SIZE];
-static TaskHandle_t xAudioTxMonitor = NULL;
 static QueueHandle_t xTxBufferDeltaQueue = NULL;
+
 int audio_tx_size(void)
 {
     return audio_out_buffer_size;
@@ -95,15 +95,13 @@ void audio_out_init(void)
 // Send audio data to the byte swap component, which then gets sent to the transmit buffer.
 void AudioTransmit(void *source_buffer)
 {
-    int result = 0;
     uint32_t source_buffer_size = 0;
     const TickType_t xMaxWait = pdMS_TO_TICKS(1);
 
     for (ever)
     {
         // Wait for a notification that more data is available from the source.
-        result = xTaskNotifyWait(0, UINT32_MAX, &source_buffer_size, xMaxWait);
-        if (result)
+        if (xTaskNotifyWait(0, UINT32_MAX, &source_buffer_size, xMaxWait))
         {
             // If we're in an overflow state and above half full, drop any incoming data.
             if (audio_out_status & AUDIO_OUT_STS_OVERFLOW)
@@ -115,7 +113,7 @@ void AudioTransmit(void *source_buffer)
                 // Start a dma transaction to send data to the byte swap component
                 configure_source_dma(source_buffer, source_buffer_size);
                 // Inform the AudioTxMonitor task that bytes were added to the transmit buffer.
-                xQueueSend(xTxBufferDeltaQueue, &source_buffer_size, 1);
+                xQueueSend(xTxBufferDeltaQueue, &source_buffer_size, 0);
             }
         }
     }
@@ -128,38 +126,19 @@ void AudioTxMonitor(void *pvParameters)
 {
     (void)pvParameters;
 
-    xAudioTxMonitor = xTaskGetCurrentTaskHandle();
     // Set based on the transfer size.
     const TickType_t xMaxWait = pdMS_TO_TICKS(1);
-
-    uint32_t notifications = 0;
     int buffer_delta_update = 0;
+    
     for (ever)
     {
-        if (xQueueReceive(xTxBufferDeltaQueue, &buffer_delta_update, 1))
+        if (xQueueReceive(xTxBufferDeltaQueue, &buffer_delta_update, xMaxWait))
         {
             audio_out_buffer_size += buffer_delta_update;
-        }
-        
-        // Process all outstanding notifications.
-        notifications = ulTaskNotifyTake(pdTRUE, xMaxWait);
-        if (notifications == 0)
-        {
-            // Timed out. I2S is not currently enabled.
-            if (!(audio_out_status & AUDIO_OUT_STS_ACTIVE) && audio_out_buffer_size >= AUDIO_TX_ACTIVE_LIMIT)
-            {
-                audio_out_enable();
-                log_info(&serial_log, "Enabling Audio Output.\n");
-            }
-        }
-        while (notifications--)
-        {
-            // Update the buffer size.
-            audio_out_buffer_size -= AUDIO_TX_TRANSFER_SIZE;
 
             // Underflow. Disable the dac and wait for usb to catch up
             // This also happens when stopping audio playback and the buffer runs out.
-            if (audio_out_buffer_size <= AUDIO_TX_UNDERFLOW_LIMIT)
+            if ((audio_out_status & AUDIO_OUT_STS_ACTIVE) && audio_out_buffer_size <= AUDIO_TX_UNDERFLOW_LIMIT)
             {
                 audio_out_disable();
                 log_warn(&serial_log, "Audio Out Underflow, Disabling Output!\n");
@@ -180,6 +159,15 @@ void AudioTxMonitor(void *pvParameters)
             {
                 audio_out_status |= AUDIO_OUT_STS_OVERFLOW;
                 log_warn(&serial_log, "Audio Out Overflow!\n");
+            }
+        }
+        else
+        {
+            // Timed out. I2S is not currently enabled and no usb packets coming in.
+            if (!(audio_out_status & AUDIO_OUT_STS_ACTIVE) && audio_out_buffer_size >= AUDIO_TX_ACTIVE_LIMIT)
+            {
+                audio_out_enable();
+                log_info(&serial_log, "Enabling Audio Output.\n");
             }
         }
     }
@@ -216,10 +204,13 @@ void audio_out_disable(void)
 /* This isr is when each I2S dma transfer completes. This will happen
  * in regular increments of AUDIO_OUT_TRANSFER_SIZE.
  */
+static int i2s_isr_delta = -AUDIO_TX_TRANSFER_SIZE;
 CY_ISR(i2s_tx_done_isr)
 {
     BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-    vTaskNotifyGiveFromISR(xAudioTxMonitor, &xHigherPriorityTaskWoken);
+    
+    xQueueSendFromISR(xTxBufferDeltaQueue, &i2s_isr_delta, &xHigherPriorityTaskWoken);
+    
     portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
 }
 

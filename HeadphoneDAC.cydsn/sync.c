@@ -54,7 +54,7 @@ void SyncMonitor(void *pvParameters)
 
     int dump_first = 1;
     
-    int interval = 16;
+    int interval = 235;
     int bias = 0;
     int i = 0;
     for (ever)
@@ -95,12 +95,12 @@ void SyncMonitor(void *pvParameters)
                         log_info(&serial_log, "Clearing + Bias\n");
                         bias = 0;
                     }
-                    if (buf_percent >= 60)
+                    if (buf_percent >= 60 && bias >= 0)
                     {
                         log_info(&serial_log, "Setting - Bias\n");
                         bias = -72;
                     }
-                    if (buf_percent <= 40)
+                    if (buf_percent <= 40 && bias <= 0)
                     {
                         log_info(&serial_log, "Setting + Bias\n");
                         bias = 72;
@@ -116,7 +116,7 @@ void SyncMonitor(void *pvParameters)
 //                    int sample_rate_i = sample_rate;
 //                    int sample_rate_frac = (float)(sample_rate-(float)sample_rate_i)*1000000.0;
 
-                    log_debug(&serial_log, "TX%: %d, Bias: %d  \n", buf_percent, bias);
+                    log_info(&serial_log, "TX%: %d\n", buf_percent);
                 }
             }
         }
