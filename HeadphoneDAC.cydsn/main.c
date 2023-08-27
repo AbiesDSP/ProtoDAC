@@ -2,7 +2,6 @@
 #include "project.h"
 
 // #include "audio_proc.h"
-// #include "muter.h"
 
 #include "audio_tx.h"
 #include "usb.h"
@@ -35,7 +34,28 @@ void SomeLogger(void *pvParameters)
     for (ever)
     {
         vTaskDelay(log_interval);
-        //log_debug(&serial_log, "Hello, World!\n");
+        log_debug(&serial_log, "Hello, World!\n");
+    }
+}
+
+// Resets the EarSaver timer.
+// This will mute the amp if this task fails to reset the timer in time.
+void EarSaver(void *pvParameters)
+{
+    (void)pvParameters;
+    
+    const TickType_t xStartupDelay = pdMS_TO_TICKS(100);
+    const TickType_t xTaskDelay = pdMS_TO_TICKS(2);
+    
+    vTaskDelay(xStartupDelay);
+    
+    TickType_t xLastWakeTime = xTaskGetTickCount();
+    EarSaverTimer_Start();
+    
+    for (ever)
+    {
+        vTaskDelayUntil(&xLastWakeTime, xTaskDelay);
+        EarSaverReset_Write(1);
     }
 }
 
@@ -49,13 +69,13 @@ int main(void)
     
     // Audio Transmit Tasks.
     TaskHandle_t xAudioOutTask = NULL;
-    xTaskCreate(AudioTransmit, "Audio Transmit", 512, (void*)usb_audio_out_buf, 5, &xAudioOutTask);
-    xTaskCreate(AudioTxMonitor, "Audio Tx Monitor", 512, NULL, 4, NULL);
+    xTaskCreate(AudioTxMonitor, "Audio Tx Monitor", 1024, NULL, 4, NULL);
+    xTaskCreate(AudioTransmit, "Audio Transmit", 1024, (void*)usb_audio_out_buf, 5, &xAudioOutTask);
     
     // USB Tasks
     usb_set_audio_output_task(xAudioOutTask);
-    xTaskCreate(USBServiceAudioFeedbackEp, "USB Feedback", configMINIMAL_STACK_SIZE, NULL, 3, NULL);
     xTaskCreate(USBConfigService, "USB Service Config", configMINIMAL_STACK_SIZE, NULL, 3, NULL);
+    xTaskCreate(USBServiceAudioFeedbackEp, "USB Feedback", configMINIMAL_STACK_SIZE, NULL, 3, NULL);
 
     // USB Synchronization Monitor
     xTaskCreate(SyncMonitor, "Sync Monitor", 512, NULL, 1, NULL);
@@ -64,11 +84,11 @@ int main(void)
     xTaskCreate(SerialSender, "Serial Sender", 512, NULL, 2, NULL);
     // Logger to test the serial logging.
     //xTaskCreate(SomeLogger, "Some Logger", 1024, NULL, 1, NULL);
-    xTaskCreate(AudioTxLogging, "Audio Tx Logging", 512, NULL, 1, NULL);
+    xTaskCreate(AudioTxLogging, "Audio Tx Logging", 1024, NULL, 1, NULL);
+    
+    xTaskCreate(EarSaver, "EarSaver", configMINIMAL_STACK_SIZE, NULL, 2, NULL);
+    
     vTaskStartScheduler();
-
-    // mute_sw_isr_StartEx(mute_isr);
-    // set_mute(AUDIO_MUTED);
 
     // uart_tx_isr_StartEx(uart_tx_isr);
 

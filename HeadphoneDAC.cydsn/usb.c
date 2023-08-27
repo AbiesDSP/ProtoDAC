@@ -14,7 +14,7 @@ static TaskHandle_t xUSBServiceAudioFeedbackEp = NULL;
 // Sample rate converted to the usb feedback register format.
 static inline uint32_t fs_to_feedback(uint32_t sample_rate)
 {
-    return (32768 * sample_rate) / 1000;
+    return (16384 * sample_rate) / 1000;
 }
 static uint32_t new_feedback = 0;
 static uint8_t fb_data[3];
@@ -46,7 +46,7 @@ void USBServiceAudioFeedbackEp(void *pvParameters)
 
     uint32_t _feedback = 0;
     uint32_t notifications = 0;
-    const TickType_t xMaxWait = pdMS_TO_TICKS(150);
+    const TickType_t xMaxWait = pdMS_TO_TICKS(60);
 
     for (ever)
     {
@@ -94,16 +94,16 @@ void USBConfigService(void *pvParameters)
     (void)pvParameters;
 
     uint8_t usb_alt_setting[USB_NO_STREAM_IFACE] = {0xFF, 0xFF};
-    const TickType_t xRefreshDelay = pdMS_TO_TICKS(50);
+    const TickType_t xRefreshDelay = pdMS_TO_TICKS(5);
     
     // Start and enumerate USB.
+    //const TickType_t xStartupDelay = pdMS_TO_TICKS(100);
+    //vTaskDelay(xStartupDelay);
     USBFS_Start(USBFS_AUDIO_DEVICE, USBFS_DWR_VDDD_OPERATION);
     while (0u == USBFS_GetConfiguration());
     
     for (ever)
     {
-        vTaskDelay(xRefreshDelay);
-
         if (USBFS_IsConfigurationChanged())
         {
             if (usb_alt_setting[USB_OUT_IFACE_INDEX] != USBFS_GetInterfaceSetting(1))
@@ -125,5 +125,6 @@ void USBConfigService(void *pvParameters)
                 // Audio in stuff.
             }
         }
+        vTaskDelay(xRefreshDelay);
     }
 }

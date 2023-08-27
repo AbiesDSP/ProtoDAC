@@ -55,12 +55,11 @@ void SyncMonitor(void *pvParameters)
 
     int dump_first = 1;
     
-    const TickType_t xStartDelay = pdMS_TO_TICKS(2000);
-    int interval = 64;
+    int interval = 1;
     int i = 0;
     for (ever)
     {
-        notifications = ulTaskNotifyTake(pdTRUE, xMaxBlockTime);
+        notifications = ulTaskNotifyTake(pdFALSE, xMaxBlockTime);
 
         // New update from sync_counter
         if (notifications)

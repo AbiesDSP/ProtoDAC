@@ -1,5 +1,4 @@
 #include "audio_tx.h"
-#include "muter.h"
 #include "loggers.h"
 #include "project_config.h"
 
@@ -80,6 +79,7 @@ void audio_out_init(void)
     i2s_dma_config();
     i2s_tx_isr_StartEx(i2s_tx_done_isr);
     I2S_Start();
+    I2S_DisableTx();
 
     // Initialize buffer management.
     audio_out_buffer_size = 0;
@@ -97,7 +97,7 @@ void AudioTransmit(void *source_buffer)
     int result = 0;
     uint32_t source_buffer_size = 0;
     const TickType_t xMaxWait = pdMS_TO_TICKS(1);
-
+    
     for (ever)
     {
         result = xTaskNotifyWait(0, UINT32_MAX, &source_buffer_size, xMaxWait);
@@ -107,17 +107,12 @@ void AudioTransmit(void *source_buffer)
             if (audio_out_status & AUDIO_OUT_STS_OVERFLOW)
             {
                 log_error(&serial_log, "Overflowed! Dropping Data!\n");
-                return;
             }
-
-            // Start a dma transaction to send data to the byte swap component
-            configure_source_dma(source_buffer, source_buffer_size);
-            audio_out_buffer_size += source_buffer_size;
-            
-            if (!(audio_out_status & AUDIO_OUT_STS_ACTIVE) && audio_out_buffer_size >= AUDIO_TX_ACTIVE_LIMIT)
+            else
             {
-                audio_out_enable();
-                log_debug(&serial_log, "Enabling Audio Output.\n");
+                // Start a dma transaction to send data to the byte swap component
+                configure_source_dma(source_buffer, source_buffer_size);
+                audio_out_buffer_size += source_buffer_size;
             }
         }
     }
@@ -129,16 +124,25 @@ void AudioTxMonitor(void *pvParameters)
     
     xAudioTxMonitor = xTaskGetCurrentTaskHandle();
     // Set based on the transfer size.
-    const TickType_t xMaxWait = pdMS_TO_TICKS(4);
+    const TickType_t xMaxWait = pdMS_TO_TICKS(1);
 
     uint32_t notifications = 0;
     
     for (ever)
     {
+        // Process all outstanding notifications.
         notifications = ulTaskNotifyTake(pdTRUE, xMaxWait);
-        while (notifications-- > 0)
+        if (notifications == 0)
         {
-
+            // Timed out. I2S is not currently enabled.
+            if (!(audio_out_status & AUDIO_OUT_STS_ACTIVE) && audio_out_buffer_size >= AUDIO_TX_ACTIVE_LIMIT)
+            {
+                audio_out_enable();
+                log_debug(&serial_log, "Enabling Audio Output.\n");
+            }
+        }
+        while (notifications--)
+        {
             // Update the buffer size.
             audio_out_buffer_size -= AUDIO_TX_TRANSFER_SIZE;
 
@@ -182,21 +186,23 @@ void AudioTxLogging(void *pvParameters)
     }
 }
 
+/* Enabling I2S will start triggering the isr for AudioTxMonitor */
 void audio_out_enable(void)
 {
     audio_out_status |= AUDIO_OUT_STS_ACTIVE;
     I2S_EnableTx();
-    set_mute(AUDIO_ENABLED);
+    MuteControl_Write(1);
 }
 
+/* Disabling I2S will stop triggering the isr for audiotxmonitor */
 void audio_out_disable(void)
 {
     audio_out_status &= ~AUDIO_OUT_STS_ACTIVE;
     I2S_DisableTx();
-    set_mute(AUDIO_MUTED);
+    MuteControl_Write(0);
 }
 
-/* This isr is when each I2S transfer completes. This will happen
+/* This isr is when each I2S dma transfer completes. This will happen
  * in regular increments of AUDIO_OUT_TRANSFER_SIZE.
  */
 CY_ISR(i2s_tx_done_isr)
@@ -212,7 +218,7 @@ static void bs_dma_config(void)
     uint8_t bs_dma_ch = DMA_BS_TX_DmaInitialize(1u, 1u, HI16(CYDEV_PERIPH_BASE), HI16(CYDEV_SRAM_BASE));
     uint8_t bs_dma_td[MAX_BS_TDS];
     
-    uint8_t td_config = TD_INC_DST_ADR | DMA_BS_TX__TD_TERMOUT_EN;
+    uint8_t td_config = TD_INC_DST_ADR;
     const uint8_t *dst = tx_buffer;
 
     // Use the max transfer size for byte swap transfers.
@@ -249,7 +255,6 @@ static void i2s_dma_config(void)
     // transfer from transmit buffer to i2s fifo
     uint8_t i2s_dma_ch = DMA_I2S_TX_DmaInitialize(1u, 1u, HI16(CYDEV_SRAM_BASE), HI16(CYDEV_PERIPH_BASE));
     uint8_t i2s_dma_td[AUDIO_TX_N_TDS];
-    
     for (int i = 0; i < AUDIO_TX_N_TDS; i++)
     {
         i2s_dma_td[i] = CyDmaTdAllocate();

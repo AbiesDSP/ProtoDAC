@@ -3718,13 +3718,16 @@
   <Group key="Pin2">
     <Group key="9e662db4-c009-4747-b19d-d455dbb41836">
       <Group key="0">
-        <Data key="Port Format" value="2,3" />
+        <Data key="Port Format" value="2,0" />
       </Group>
       <Group key="1">
-        <Data key="Port Format" value="2,2" />
+        <Data key="Port Format" value="2,1" />
       </Group>
       <Group key="2">
-        <Data key="Port Format" value="2,1" />
+        <Data key="Port Format" value="2,2" />
+      </Group>
+      <Group key="3">
+        <Data key="Port Format" value="2,3" />
       </Group>
     </Group>
     <Group key="0412e7a3-7bb2-4490-8a7d-0675b098c5ba">
