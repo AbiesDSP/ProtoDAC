@@ -43,15 +43,15 @@ void SomeLogger(void *pvParameters)
 void EarSaver(void *pvParameters)
 {
     (void)pvParameters;
-    
+
     const TickType_t xStartupDelay = pdMS_TO_TICKS(100);
     const TickType_t xTaskDelay = pdMS_TO_TICKS(2);
-    
+
     vTaskDelay(xStartupDelay);
-    
+
     TickType_t xLastWakeTime = xTaskGetTickCount();
     EarSaverTimer_Start();
-    
+
     for (ever)
     {
         vTaskDelayUntil(&xLastWakeTime, xTaskDelay);
@@ -66,12 +66,12 @@ int main(void)
 #endif
 
     prvHardwareSetup();
-    
+
     // Audio Transmit Tasks.
     TaskHandle_t xAudioOutTask = NULL;
     xTaskCreate(AudioTxMonitor, "Audio Tx Monitor", 1024, NULL, 4, NULL);
-    xTaskCreate(AudioTransmit, "Audio Transmit", 1024, (void*)usb_audio_out_buf, 5, &xAudioOutTask);
-    
+    xTaskCreate(AudioTransmit, "Audio Transmit", 1024, (void *)usb_audio_out_buf, 5, &xAudioOutTask);
+
     // USB Tasks
     usb_set_audio_output_task(xAudioOutTask);
     xTaskCreate(USBConfigService, "USB Service Config", configMINIMAL_STACK_SIZE, NULL, 3, NULL);
@@ -79,18 +79,16 @@ int main(void)
 
     // USB Synchronization Monitor
     xTaskCreate(SyncMonitor, "Sync Monitor", 512, NULL, 1, NULL);
-    
+
     // Serial Transmit Port
     xTaskCreate(SerialSender, "Serial Sender", 512, NULL, 2, NULL);
     // Logger to test the serial logging.
-    //xTaskCreate(SomeLogger, "Some Logger", 1024, NULL, 1, NULL);
+    // xTaskCreate(SomeLogger, "Some Logger", 1024, NULL, 1, NULL);
     xTaskCreate(AudioTxLogging, "Audio Tx Logging", 1024, NULL, 1, NULL);
-    
-    xTaskCreate(EarSaver, "EarSaver", configMINIMAL_STACK_SIZE, NULL, 2, NULL);
-    
-    vTaskStartScheduler();
 
-    // uart_tx_isr_StartEx(uart_tx_isr);
+    xTaskCreate(EarSaver, "EarSaver", configMINIMAL_STACK_SIZE, NULL, 2, NULL);
+
+    vTaskStartScheduler();
 
     // /* Serial Receive Configuration */
     // SerialRxConfig serial_rx_config = {
@@ -102,8 +100,6 @@ int main(void)
     // };
     // serial_rx_init(&serial_rx, &serial_rx_config);
     // flush_isr_StartEx(flush_isr);
-
-    // serial_log.level = GLOBAL_LOG_LEVEL;
 
     // int n_samples = 0;
     // float volume_gain = 1.0;
@@ -150,12 +146,6 @@ int main(void)
         //             serial_rx_receive(&serial_rx, serial_msg_buf, rx_size);
         //             serial_msg_buf[rx_size] = 0; // Make sure it has a delimeter...
         //             log_info(&serial_log, "%s", serial_msg_buf);
-        //         }
-
-        //         // USB Handler
-        //         if (USBFS_GetConfiguration())
-        //         {
-        //             usb_service();
         //         }
 
         //         // New adc data.

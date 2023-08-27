@@ -46,7 +46,6 @@ static uint8_t source_dma_td[1];
     This will infinitely loop and send the transmit buffer.
 */
 
-
 // Initiate a dma transaction
 static void configure_source_dma(const uint8_t *src, int amount);
 // Configure byte swap dma
@@ -59,7 +58,7 @@ CY_ISR_PROTO(i2s_tx_done_isr);
 
 static uint8_t tx_buffer[AUDIO_TX_BUF_SIZE];
 static TaskHandle_t xAudioTxMonitor = NULL;
-
+static QueueHandle_t xTxBufferDeltaQueue = NULL;
 int audio_tx_size(void)
 {
     return audio_out_buffer_size;
@@ -84,6 +83,8 @@ void audio_out_init(void)
     // Initialize buffer management.
     audio_out_buffer_size = 0;
     audio_out_status = 0;
+    
+    xTxBufferDeltaQueue = xQueueCreate(8, sizeof(int));
 
     // Set UDB fifos to use half full flags.
     byte_swap_tx_DP_F0_SET_LEVEL_MID;
@@ -97,9 +98,10 @@ void AudioTransmit(void *source_buffer)
     int result = 0;
     uint32_t source_buffer_size = 0;
     const TickType_t xMaxWait = pdMS_TO_TICKS(1);
-    
+
     for (ever)
     {
+        // Wait for a notification that more data is available from the source.
         result = xTaskNotifyWait(0, UINT32_MAX, &source_buffer_size, xMaxWait);
         if (result)
         {
@@ -112,24 +114,33 @@ void AudioTransmit(void *source_buffer)
             {
                 // Start a dma transaction to send data to the byte swap component
                 configure_source_dma(source_buffer, source_buffer_size);
-                audio_out_buffer_size += source_buffer_size;
+                // Inform the AudioTxMonitor task that bytes were added to the transmit buffer.
+                xQueueSend(xTxBufferDeltaQueue, &source_buffer_size, 1);
             }
         }
     }
 }
 
+// Monitor the tx buffer size to determine when to enable or disable audio output.
+// Handle overflow/underflow gracefully
+// Modify the buffer size in response to new data being added and the i2s isr.
 void AudioTxMonitor(void *pvParameters)
 {
     (void)pvParameters;
-    
+
     xAudioTxMonitor = xTaskGetCurrentTaskHandle();
     // Set based on the transfer size.
     const TickType_t xMaxWait = pdMS_TO_TICKS(1);
 
     uint32_t notifications = 0;
-    
+    int buffer_delta_update = 0;
     for (ever)
     {
+        if (xQueueReceive(xTxBufferDeltaQueue, &buffer_delta_update, 1))
+        {
+            audio_out_buffer_size += buffer_delta_update;
+        }
+        
         // Process all outstanding notifications.
         notifications = ulTaskNotifyTake(pdTRUE, xMaxWait);
         if (notifications == 0)
@@ -138,7 +149,7 @@ void AudioTxMonitor(void *pvParameters)
             if (!(audio_out_status & AUDIO_OUT_STS_ACTIVE) && audio_out_buffer_size >= AUDIO_TX_ACTIVE_LIMIT)
             {
                 audio_out_enable();
-                log_debug(&serial_log, "Enabling Audio Output.\n");
+                log_info(&serial_log, "Enabling Audio Output.\n");
             }
         }
         while (notifications--)
@@ -176,8 +187,8 @@ void AudioTxMonitor(void *pvParameters)
 void AudioTxLogging(void *pvParameters)
 {
     (void)pvParameters;
-    
-    const TickType_t xDelay = pdMS_TO_TICKS(1000);
+
+    const TickType_t xDelay = pdMS_TO_TICKS(2000);
     for (ever)
     {
         vTaskDelay(xDelay);
@@ -217,7 +228,7 @@ static void bs_dma_config(void)
     // Send byte swapped data to the tx buffer.
     uint8_t bs_dma_ch = DMA_BS_TX_DmaInitialize(1u, 1u, HI16(CYDEV_PERIPH_BASE), HI16(CYDEV_SRAM_BASE));
     uint8_t bs_dma_td[MAX_BS_TDS];
-    
+
     uint8_t td_config = TD_INC_DST_ADR;
     const uint8_t *dst = tx_buffer;
 

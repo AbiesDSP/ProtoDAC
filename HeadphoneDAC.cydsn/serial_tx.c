@@ -42,7 +42,7 @@ int serial_send(const void *src, int amount)
 {
     // Check for free space?
     // Copy data into the buffer
-    const TickType_t xMaxBlockTime = pdMS_TO_TICKS(1);
+//    const TickType_t xMaxBlockTime = pdMS_TO_TICKS(1);
     
 //    if (xSemaphoreTake(serial_tx_lock, xMaxBlockTime))
 //    {

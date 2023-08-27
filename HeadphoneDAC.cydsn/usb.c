@@ -46,7 +46,7 @@ void USBServiceAudioFeedbackEp(void *pvParameters)
 
     uint32_t _feedback = 0;
     uint32_t notifications = 0;
-    const TickType_t xMaxWait = pdMS_TO_TICKS(60);
+    const TickType_t xMaxWait = pdMS_TO_TICKS(64);
 
     for (ever)
     {
@@ -95,13 +95,14 @@ void USBConfigService(void *pvParameters)
 
     uint8_t usb_alt_setting[USB_NO_STREAM_IFACE] = {0xFF, 0xFF};
     const TickType_t xRefreshDelay = pdMS_TO_TICKS(5);
-    
+
     // Start and enumerate USB.
-    //const TickType_t xStartupDelay = pdMS_TO_TICKS(100);
-    //vTaskDelay(xStartupDelay);
+    // const TickType_t xStartupDelay = pdMS_TO_TICKS(100);
+    // vTaskDelay(xStartupDelay);
     USBFS_Start(USBFS_AUDIO_DEVICE, USBFS_DWR_VDDD_OPERATION);
-    while (0u == USBFS_GetConfiguration());
-    
+    while (0u == USBFS_GetConfiguration())
+        ;
+
     for (ever)
     {
         if (USBFS_IsConfigurationChanged())
@@ -112,7 +113,7 @@ void USBConfigService(void *pvParameters)
 
                 if (usb_alt_setting[USB_OUT_IFACE_INDEX] != USB_ALT_ZEROBW)
                 {
-                    USBFS_ReadOutEP(AUDIO_OUT_EP, (uint8_t*)usb_audio_out_buf, USB_MAX_BUF_SIZE);
+                    USBFS_ReadOutEP(AUDIO_OUT_EP, (uint8_t *)usb_audio_out_buf, USB_MAX_BUF_SIZE);
                     USBFS_EnableOutEP(AUDIO_OUT_EP);
                     USBFS_LoadInEP(AUDIO_FB_EP, (const uint8_t *)fb_data, 3);
                     USBFS_LoadInEP(AUDIO_FB_EP, USBFS_NULL, 3);
