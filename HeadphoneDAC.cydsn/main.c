@@ -10,6 +10,8 @@
 
 #include "loggers.h"
 
+#define BOOT_SW 0x8
+
 static void prvHardwareSetup(void);
 void SomeLogger(void *pvParameters);
 
@@ -18,6 +20,13 @@ int main(void)
 #if !TEST_BUILD
     CyGlobalIntEnable;
 #endif
+
+    CyDelay(2);
+    // If the boot switch is held on startup, start the bootloader.
+    if ((SwitchStatus_Read() & BOOT_SW) == 0)
+    {
+        Bootloadable_Load();
+    }
 
     prvHardwareSetup();
 

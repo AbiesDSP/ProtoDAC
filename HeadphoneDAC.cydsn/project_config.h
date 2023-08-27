@@ -28,7 +28,7 @@
 
 // More than enough for 96kHz
 #define USB_MAX_BUF_SIZE 1024
-#define USB_CONFIG_SERVICE_MAX_WAIT 10
+#define USB_CONFIG_SERVICE_MAX_WAIT 5
 #define USB_FEEDBACK_MAX_WAIT 60
 
 #define USBFS_AUDIO_DEVICE 0

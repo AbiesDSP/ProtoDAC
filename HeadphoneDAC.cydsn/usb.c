@@ -45,13 +45,11 @@ void USBServiceAudioFeedbackEp(void *pvParameters)
     xUSBServiceAudioFeedbackEp = xTaskGetCurrentTaskHandle();
 
     uint32_t _feedback = 0;
-    uint32_t notifications = 0;
     const TickType_t xMaxWait = pdMS_TO_TICKS(USB_FEEDBACK_MAX_WAIT);
-
+    
     for (ever)
     {
-        notifications = ulTaskNotifyTake(pdTRUE, xMaxWait);
-        if (notifications)
+        if (ulTaskNotifyTake(pdTRUE, xMaxWait))
         {
             // Update the feedback value.
             _feedback = new_feedback;
@@ -81,6 +79,8 @@ void USBConfigService(void *pvParameters)
     while (0u == USBFS_GetConfiguration())
         ;
 
+    TickType_t xLastWakeTime = xTaskGetTickCount();
+    
     for (ever)
     {
         if (USBFS_IsConfigurationChanged())
@@ -104,7 +104,7 @@ void USBConfigService(void *pvParameters)
                 // Audio in stuff.
             }
         }
-        vTaskDelay(xRefreshDelay);
+        vTaskDelayUntil(&xLastWakeTime, xRefreshDelay);
     }
 }
 

@@ -28,6 +28,7 @@ __pycache__
 *-cache*
 *-rescue
 *.kicad_prl
+*.lck
 
 # FreeRTOS ignores
 FreeRTOS/Demo
