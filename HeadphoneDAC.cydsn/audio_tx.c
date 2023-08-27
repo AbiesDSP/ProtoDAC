@@ -1,6 +1,9 @@
 #include "audio_tx.h"
 #include "muter.h"
 #include "loggers.h"
+#include "project_config.h"
+
+#include "serial.h"
 
 #include <I2S.h>
 
@@ -16,11 +19,10 @@
 #include <stdlib.h>
 
 #define DMA_MAX_TRANSFER_SIZE 4095
-
 #define FIFO_HALF_FULL_MASK 0x0C
 
 volatile int audio_out_buffer_size = 0;
-volatile uint8_t audio_out_status = 0;
+uint8_t audio_out_status = 0;
 
 // Transfer audio memory source to its destination.
 // The destination may be the byte swap component or the transmit buffer.
@@ -37,8 +39,6 @@ static uint8_t source_dma_td[1];
 // Transfers data from memory to the byte-swap component,
 // Then the endian-swapped bytes are transferred to the transmit buffer.
 #define MAX_BS_TDS 16 // enough for entire memory...
-static uint8_t bs_dma_ch;
-static uint8_t bs_dma_td[MAX_BS_TDS];
 
 // I2S Transmit dma. Transfers data from the transmit buffer to the i2s component.
 // dma tds transfers of equal sizes will be chained and there will be an interrupt for each transfer.
@@ -46,8 +46,7 @@ static uint8_t bs_dma_td[MAX_BS_TDS];
 /*
     This will infinitely loop and send the transmit buffer.
 */
-static uint8_t i2s_dma_ch;
-static uint8_t i2s_dma_td[AUDIO_OUT_MAX_TDS];
+
 
 // Initiate a dma transaction
 static void configure_source_dma(const uint8_t *src, int amount);
@@ -59,27 +58,17 @@ static void i2s_dma_config(void);
 // ISRs for TopDesign peripherals.
 CY_ISR_PROTO(i2s_tx_done_isr);
 
-// Configuration info.
-static const AudioTxConfig *config;
+static uint8_t tx_buffer[AUDIO_TX_BUF_SIZE];
+static TaskHandle_t xAudioTxMonitor = NULL;
 
-// buffer management levels.
-static int active_limit = 0;
-static int underflow_limit = 0;
-static int overflow_limit = 0;
-static int buffer_capacity = 0;
+int audio_tx_size(void)
+{
+    return audio_out_buffer_size;
+}
 
 // Configure and start up all components for audio
-void audio_out_init(const AudioTxConfig *_config)
+void audio_out_init(void)
 {
-    config = _config;
-
-    buffer_capacity = config->transfer_size * config->n_tds;
-    // Turn on I2S when buffer is half full.
-    active_limit = buffer_capacity >> 1;
-    // Number of blocks from empty/full.
-    underflow_limit = config->transfer_size * config->overflow_limit;
-    overflow_limit = buffer_capacity - underflow_limit;
-
     // Send source data to the byte swap component
     source_dma_ch = DMA_BS_RX_DmaInitialize(1u, 1u, HI16(CYDEV_SRAM_BASE), HI16(CYDEV_PERIPH_BASE));
     source_dma_td[0] = CyDmaTdAllocate();
@@ -103,49 +92,93 @@ void audio_out_init(const AudioTxConfig *_config)
 }
 
 // Send audio data to the byte swap component, which then gets sent to the transmit buffer.
-void audio_out_transmit(const uint8_t *audio_buf, int amount)
+void AudioTransmit(void *source_buffer)
 {
-    // If we're in an overflow state and above half full, drop any incoming data.
-    if (audio_out_status & AUDIO_OUT_STS_OVERFLOW)
+    int result = 0;
+    uint32_t source_buffer_size = 0;
+    const TickType_t xMaxWait = pdMS_TO_TICKS(1);
+
+    for (ever)
     {
-        if (audio_out_buffer_size >= active_limit)
+        result = xTaskNotifyWait(0, UINT32_MAX, &source_buffer_size, xMaxWait);
+        if (result)
         {
-            log_error(&serial_log, "Overflowed! Dropping Data!\n");
-            return;
+            // If we're in an overflow state and above half full, drop any incoming data.
+            if (audio_out_status & AUDIO_OUT_STS_OVERFLOW)
+            {
+                log_error(&serial_log, "Overflowed! Dropping Data!\n");
+                return;
+            }
+
+            // Start a dma transaction to send data to the byte swap component
+            configure_source_dma(source_buffer, source_buffer_size);
+            audio_out_buffer_size += source_buffer_size;
+            
+            if (!(audio_out_status & AUDIO_OUT_STS_ACTIVE) && audio_out_buffer_size >= AUDIO_TX_ACTIVE_LIMIT)
+            {
+                audio_out_enable();
+                log_debug(&serial_log, "Enabling Audio Output.\n");
+            }
         }
-        // Once we're < half full, we can clear the overflow state and start sending data.
-        audio_out_status &= ~AUDIO_OUT_STS_OVERFLOW;
     }
+}
 
-    // Start a dma transaction to send data to the byte swap component
-    configure_source_dma(audio_buf, amount);
+void AudioTxMonitor(void *pvParameters)
+{
+    (void)pvParameters;
+    
+    xAudioTxMonitor = xTaskGetCurrentTaskHandle();
+    // Set based on the transfer size.
+    const TickType_t xMaxWait = pdMS_TO_TICKS(4);
 
-    // modifying buffer_size is not atomic! Always guard this when modifying.
-    int int_status = CyEnterCriticalSection();
-    audio_out_buffer_size += amount;
-    CyExitCriticalSection(int_status);
-
-    /* Tx buffer has overflowed, or is about to.
-     * How can we handle this?
-     * 1. Drop the data on the floor.
-     * 2. Overwrite.
-     * 3. Tell usb to stop?
-     * 4. Modify usb feedback register?
-     * 5. ?
-     *
-     * Currently, this will just drop data. The feedback synchronization
-     * should prevent overflow from ever happening..
-     */
-    if (audio_out_buffer_size >= overflow_limit)
+    uint32_t notifications = 0;
+    
+    for (ever)
     {
-        audio_out_status |= AUDIO_OUT_STS_OVERFLOW;
-        log_warn(&serial_log, "Audio Out Overflow!\n");
+        notifications = ulTaskNotifyTake(pdTRUE, xMaxWait);
+        while (notifications-- > 0)
+        {
+
+            // Update the buffer size.
+            audio_out_buffer_size -= AUDIO_TX_TRANSFER_SIZE;
+
+            // Underflow. Disable the dac and wait for usb to catch up
+            // This also happens when stopping audio playback and the buffer runs out.
+            if (audio_out_buffer_size <= AUDIO_TX_UNDERFLOW_LIMIT)
+            {
+                audio_out_disable();
+                log_warn(&serial_log, "Audio Out Underflow, Disabling Output!\n");
+            }
+
+            // Clear the overflow condition.
+            if (audio_out_status & AUDIO_OUT_STS_OVERFLOW)
+            {
+                if (audio_out_buffer_size <= AUDIO_TX_ACTIVE_LIMIT)
+                {
+                    audio_out_status &= ~AUDIO_OUT_STS_OVERFLOW;
+                    log_info(&serial_log, "Clearing Overflow\n");
+                }
+            }
+
+            // Set the overflow condition.
+            else if (audio_out_buffer_size >= AUDIO_TX_OVERFLOW_LIMIT)
+            {
+                audio_out_status |= AUDIO_OUT_STS_OVERFLOW;
+                log_warn(&serial_log, "Audio Out Overflow!\n");
+            }
+        }
     }
-
-    // Once the buffer is half full, enable the i2s output.
-    if (!(audio_out_status & AUDIO_OUT_STS_ACTIVE) && audio_out_buffer_size >= active_limit)
+}
+void AudioTxLogging(void *pvParameters)
+{
+    (void)pvParameters;
+    
+    const TickType_t xDelay = pdMS_TO_TICKS(1000);
+    for (ever)
     {
-        audio_out_enable();
+        vTaskDelay(xDelay);
+        int buf_percent = (100 * audio_tx_size() / AUDIO_TX_BUF_SIZE);
+        log_debug(&serial_log, "Buf%: %d, sts: %d    \n", buf_percent, audio_out_status);
     }
 }
 
@@ -164,31 +197,26 @@ void audio_out_disable(void)
 }
 
 /* This isr is when each I2S transfer completes. This will happen
- * in regular increments of AUDIO_OUT_TRANSFER_SIZE. So we can
- * decrease the buffer size by that much.
+ * in regular increments of AUDIO_OUT_TRANSFER_SIZE.
  */
 CY_ISR(i2s_tx_done_isr)
 {
-    audio_out_buffer_size -= config->transfer_size;
-    // Underflow. Disable the dac and wait for usb to catch up
-    // This also happens when stopping audio playback and the buffer runs out.
-    if (audio_out_buffer_size <= underflow_limit)
-    {
-        audio_out_disable();
-        log_warn(&serial_log, "Audio Out Underflow!\n");
-    }
+    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+    vTaskNotifyGiveFromISR(xAudioTxMonitor, &xHigherPriorityTaskWoken);
+    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
 }
 
 static void bs_dma_config(void)
 {
     // Send byte swapped data to the tx buffer.
-    bs_dma_ch = DMA_BS_TX_DmaInitialize(1u, 1u, HI16(CYDEV_PERIPH_BASE), HI16(CYDEV_SRAM_BASE));
-
+    uint8_t bs_dma_ch = DMA_BS_TX_DmaInitialize(1u, 1u, HI16(CYDEV_PERIPH_BASE), HI16(CYDEV_SRAM_BASE));
+    uint8_t bs_dma_td[MAX_BS_TDS];
+    
     uint8_t td_config = TD_INC_DST_ADR | DMA_BS_TX__TD_TERMOUT_EN;
-    const uint8_t *dst = config->buffer;
+    const uint8_t *dst = tx_buffer;
 
     // Use the max transfer size for byte swap transfers.
-    int remaining = buffer_capacity;
+    int remaining = AUDIO_TX_BUF_SIZE;
     uint8_t *td = bs_dma_td;
     int required_tds = (remaining + DMA_MAX_TRANSFER_SIZE - 1) / DMA_MAX_TRANSFER_SIZE;
     for (int i = 0; i < required_tds; i++)
@@ -219,22 +247,24 @@ static void bs_dma_config(void)
 static void i2s_dma_config(void)
 {
     // transfer from transmit buffer to i2s fifo
-    i2s_dma_ch = DMA_I2S_TX_DmaInitialize(1u, 1u, HI16(CYDEV_SRAM_BASE), HI16(CYDEV_PERIPH_BASE));
-    for (int i = 0; i < config->n_tds; i++)
+    uint8_t i2s_dma_ch = DMA_I2S_TX_DmaInitialize(1u, 1u, HI16(CYDEV_SRAM_BASE), HI16(CYDEV_PERIPH_BASE));
+    uint8_t i2s_dma_td[AUDIO_TX_N_TDS];
+    
+    for (int i = 0; i < AUDIO_TX_N_TDS; i++)
     {
         i2s_dma_td[i] = CyDmaTdAllocate();
     }
 
     // Increment the source buffer and generate an increment every transfer.
     uint8_t td_config = TD_INC_SRC_ADR | DMA_I2S_TX__TD_TERMOUT_EN;
-    const uint8_t *src = config->buffer;
+    const uint8_t *src = tx_buffer;
 
     // Chain tds in infinite loop. We get an interrupt every config->transfer_size bytes.
-    for (int i = 0; i < config->n_tds; i++)
+    for (int i = 0; i < AUDIO_TX_N_TDS; i++)
     {
-        CyDmaTdSetConfiguration(i2s_dma_td[i], config->transfer_size, i2s_dma_td[(i + 1) % config->n_tds], td_config);
+        CyDmaTdSetConfiguration(i2s_dma_td[i], AUDIO_TX_TRANSFER_SIZE, i2s_dma_td[(i + 1) % AUDIO_TX_N_TDS], td_config);
         CyDmaTdSetAddress(i2s_dma_td[i], LO16((uint32_t)src), LO16((uint32_t)I2S_TX_CH0_F0_PTR));
-        src += config->transfer_size;
+        src += AUDIO_TX_TRANSFER_SIZE;
     }
 
     CyDmaChSetInitialTd(i2s_dma_ch, i2s_dma_td[0]);

@@ -1,14 +1,25 @@
 #include "serial_logger.h"
+#include "serial_tx.h"
+
+#include "project_config.h"
 
 int serial_handler_write(LogHandler *_handler, const char *src, int amount)
 {
-    SerialLogHandler *handler = (SerialLogHandler *)_handler;
+    (void)_handler;
+    int written = 0;
+    
+    written = serial_send(src, amount);
 
-    return serial_tx_send(handler->serial_tx, src, amount);
+    
+    return written;
 }
 
-void serial_log_handler_init(SerialLogHandler *self, SerialTx *serial_tx)
+void SerialLogger(void *pvParameters)
 {
-    log_handler_init_funcs(&self->handler, serial_handler_write, NULL);
-    self->serial_tx = serial_tx;
 }
+
+Logger serial_log;
+LogHandler serial_log_handler = {
+    .write = serial_handler_write,
+    .read = NULL,
+};

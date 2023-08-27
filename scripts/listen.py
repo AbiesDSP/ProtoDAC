@@ -9,7 +9,7 @@ class Args:
 parser = argparse.ArgumentParser()
 parser.add_argument("--delim", default="\n", type=str)
 
-READ_SIZE = 32
+READ_SIZE = 256
 
 
 def main():

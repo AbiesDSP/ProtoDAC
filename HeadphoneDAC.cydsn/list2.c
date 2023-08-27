@@ -1,5 +1,5 @@
 #include "list2.h"
-#include <stdlib.h>
+#include "project_config.h"
 
 void list_init(List *self)
 {
@@ -16,7 +16,8 @@ void list_destroy(List *self)
     while (it != NULL)
     {
         next = it->next;
-        free(it);
+        vPortFree(it);
+//        free(it);
         it = next;
     }
 }
@@ -24,7 +25,7 @@ void list_destroy(List *self)
 int list_insert(List *self, const void *ref, int n)
 {
     // Allocate a node
-    ListNode *node = malloc(sizeof(*node));
+    ListNode *node = pvPortMalloc(sizeof(*node));
     node->ref = (void *)ref;
     node->next = NULL;
     node->prev = NULL;

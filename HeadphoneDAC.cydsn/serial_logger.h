@@ -1,11 +1,8 @@
 #pragma once
-#include "serial_tx.h"
 #include "logging.h"
+#include "project_config.h"
 
-typedef struct SerialLogHandler
-{
-    LogHandler handler;
-    SerialTx *serial_tx;
-} SerialLogHandler;
+extern LogHandler serial_log_handler;
+extern Logger serial_log;
 
-void serial_log_handler_init(SerialLogHandler *self, SerialTx *serial_tx);
+void SerialLogger(void *pvParameters);

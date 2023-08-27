@@ -550,7 +550,8 @@
     </Group>
     <Group key="Interrupt">
       <Data key="3b229842-b290-4b7c-8bcb-67befa05cf93" value="sync_counter_isr" />
-      <Data key="370d726e-411d-4034-abd4-9206b4b304fd" value="tx_isr" />
+      <Data key="6cd381d4-757a-4486-ba0b-ee26be5eb84f" value="mute_sw_isr" />
+      <Data key="370d726e-411d-4034-abd4-9206b4b304fd" value="uart_tx_isr" />
       <Data key="c0065ef1-1b4a-4c27-bd7a-de833fd58b42/8c70c28a-acdf-4af1-b803-ce0c58edb918" value="USBFS_ep_3" />
       <Data key="c0065ef1-1b4a-4c27-bd7a-de833fd58b42/13a8975c-7fb7-4bb9-91f3-189a6b7c1d86" value="USBFS_ep_1" />
       <Data key="c0065ef1-1b4a-4c27-bd7a-de833fd58b42/32c79bfe-13d8-4583-b2de-bc111c0e27d4" value="USBFS_ep_4" />
@@ -563,6 +564,7 @@
       <Data key="c0065ef1-1b4a-4c27-bd7a-de833fd58b42/dc6da32b-30f7-48b3-b8a1-dbf0214d8c83" value="USBFS_dp_int" />
       <Data key="c0065ef1-1b4a-4c27-bd7a-de833fd58b42/ef9224ec-f8a6-4df0-8a49-e09ce75cefa7" value="USBFS_ep_0" />
       <Data key="da4326ee-8d4a-46e5-b276-1cf185f541a0" value="flush_isr" />
+      <Data key="e94e403e-1269-4d47-adb2-f4f92b23c6a2" value="boot_sw_isr" />
       <Data key="f6075f25-fb8e-4184-8251-8c99fb8b6bb2" value="bs_tx_isr" />
       <Data key="fe5781ba-6c33-4da1-bdfa-18fc952146b8" value="i2s_tx_isr" />
     </Group>
@@ -3666,35 +3668,35 @@
     <Group key="c0065ef1-1b4a-4c27-bd7a-de833fd58b42/8c70c28a-acdf-4af1-b803-ce0c58edb918">
       <Group key="CortexM3">
         <Data key="Assigned" value="True" />
-        <Data key="Priority" value="5" />
+        <Data key="Priority" value="7" />
         <Data key="Vector" value="-1" />
       </Group>
     </Group>
     <Group key="c0065ef1-1b4a-4c27-bd7a-de833fd58b42/13a8975c-7fb7-4bb9-91f3-189a6b7c1d86">
       <Group key="CortexM3">
         <Data key="Assigned" value="True" />
-        <Data key="Priority" value="5" />
+        <Data key="Priority" value="7" />
         <Data key="Vector" value="-1" />
       </Group>
     </Group>
     <Group key="c0065ef1-1b4a-4c27-bd7a-de833fd58b42/70277391-b927-4e50-8d12-6874a5c53f72">
       <Group key="CortexM3">
         <Data key="Assigned" value="True" />
-        <Data key="Priority" value="3" />
+        <Data key="Priority" value="6" />
         <Data key="Vector" value="-1" />
       </Group>
     </Group>
     <Group key="c0065ef1-1b4a-4c27-bd7a-de833fd58b42/d91ea660-bc91-4817-b29b-2fe86c305500">
       <Group key="CortexM3">
         <Data key="Assigned" value="True" />
-        <Data key="Priority" value="3" />
+        <Data key="Priority" value="6" />
         <Data key="Vector" value="-1" />
       </Group>
     </Group>
     <Group key="c0065ef1-1b4a-4c27-bd7a-de833fd58b42/dc6da32b-30f7-48b3-b8a1-dbf0214d8c83">
       <Group key="CortexM3">
         <Data key="Assigned" value="True" />
-        <Data key="Priority" value="3" />
+        <Data key="Priority" value="6" />
         <Data key="Vector" value="-1" />
       </Group>
     </Group>
@@ -3708,7 +3710,7 @@
     <Group key="fe5781ba-6c33-4da1-bdfa-18fc952146b8">
       <Group key="CortexM3">
         <Data key="Assigned" value="True" />
-        <Data key="Priority" value="4" />
+        <Data key="Priority" value="7" />
         <Data key="Vector" value="-1" />
       </Group>
     </Group>
@@ -3784,10 +3786,10 @@
     <Data key="CYDEV_DEBUGGING_DPS" value="SWD_SWV" />
     <Data key="CYDEV_DEBUGGING_XRES" value="False" />
     <Data key="CYDEV_ECC_ENABLE" value="False" />
-    <Data key="CYDEV_HEAP_SIZE" value="2048" />
+    <Data key="CYDEV_HEAP_SIZE" value="0" />
     <Data key="CYDEV_INSTRUCT_CACHE_ENABLED" value="True" />
     <Data key="CYDEV_PROTECTION_ENABLE" value="False" />
-    <Data key="CYDEV_STACK_SIZE" value="2048" />
+    <Data key="CYDEV_STACK_SIZE" value="1024" />
     <Data key="CYDEV_TEMPERATURE" value="0C - 85/125C" />
     <Data key="CYDEV_TRACE_ENABLED" value="False" />
     <Data key="CYDEV_USE_BUNDLED_CMSIS" value="True" />
