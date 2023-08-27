@@ -50,7 +50,7 @@ void logger_init(Logger *log, const LogHandler *handler, LogHeaderFormat header_
     {
         log->header_fmt_str = default_header_fmt_str;
     }
-    
+
     log->level = LOG_ERROR;
 }
 
@@ -70,7 +70,7 @@ void log_(const Logger *log, enum LogLevel level, const char *source_file, const
         va_start(args, args_fmt);
         // Format into the message buffer.
         // Format header
-        // level, source_file, timestamp, 
+        // level, source_file, timestamp,
         int message_size = log->header_format(message_buf, log->header_fmt_str, log_level2str(level), source_file);
         // Format args
         message_size += log->args_format(message_buf + message_size, args_fmt, args);
@@ -81,7 +81,7 @@ void log_(const Logger *log, enum LogLevel level, const char *source_file, const
             handler = (LogHandler *)it->ref;
             handler->write(handler, message_buf, message_size);
         }
-        
+
         va_end(args);
     }
 }

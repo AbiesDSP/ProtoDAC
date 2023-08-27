@@ -17,7 +17,7 @@ void list_destroy(List *self)
     {
         next = it->next;
         vPortFree(it);
-//        free(it);
+        //        free(it);
         it = next;
     }
 }

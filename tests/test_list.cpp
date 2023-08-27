@@ -1,6 +1,6 @@
 extern "C"
 {
-#include "list.h"
+#include "list2.h"
 }
 #include <catch2/catch_test_macros.hpp>
 

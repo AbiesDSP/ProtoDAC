@@ -46,7 +46,7 @@ void USBServiceAudioFeedbackEp(void *pvParameters)
 
     uint32_t _feedback = 0;
     uint32_t notifications = 0;
-    const TickType_t xMaxWait = pdMS_TO_TICKS(64);
+    const TickType_t xMaxWait = pdMS_TO_TICKS(USB_FEEDBACK_MAX_WAIT);
 
     for (ever)
     {
@@ -68,37 +68,15 @@ void USBServiceAudioFeedbackEp(void *pvParameters)
     }
 }
 
-CY_ISR(usb_audio_out_ep_isr)
-{
-    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-    uint32_t audio_out_count = USBFS_GetEPCount(AUDIO_OUT_EP);
-
-    // Inform the audio out task there is new data.
-    xTaskNotifyFromISR(xAudioOutTask, audio_out_count, eSetValueWithOverwrite, &xHigherPriorityTaskWoken);
-
-    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
-}
-
-// This is called whenever the host requests feedback.
-CY_ISR(usb_audio_out_fb_isr)
-{
-    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-
-    vTaskNotifyGiveFromISR(xUSBServiceAudioFeedbackEp, &xHigherPriorityTaskWoken);
-    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
-}
-
 // Fun fun usb stuff.
 void USBConfigService(void *pvParameters)
 {
     (void)pvParameters;
 
     uint8_t usb_alt_setting[USB_NO_STREAM_IFACE] = {0xFF, 0xFF};
-    const TickType_t xRefreshDelay = pdMS_TO_TICKS(5);
+    const TickType_t xRefreshDelay = pdMS_TO_TICKS(USB_CONFIG_SERVICE_MAX_WAIT);
 
     // Start and enumerate USB.
-    // const TickType_t xStartupDelay = pdMS_TO_TICKS(100);
-    // vTaskDelay(xStartupDelay);
     USBFS_Start(USBFS_AUDIO_DEVICE, USBFS_DWR_VDDD_OPERATION);
     while (0u == USBFS_GetConfiguration())
         ;
@@ -128,4 +106,25 @@ void USBConfigService(void *pvParameters)
         }
         vTaskDelay(xRefreshDelay);
     }
+}
+
+CY_ISR(usb_audio_out_ep_isr)
+{
+    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+    // Get the number of bytes transferred.
+    uint32_t audio_out_count = USBFS_GetEPCount(AUDIO_OUT_EP);
+
+    // Inform the audio out task there is new data.
+    xTaskNotifyFromISR(xAudioOutTask, audio_out_count, eSetValueWithOverwrite, &xHigherPriorityTaskWoken);
+
+    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+}
+
+// This is called whenever the host requests feedback.
+CY_ISR(usb_audio_out_fb_isr)
+{
+    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+
+    vTaskNotifyGiveFromISR(xUSBServiceAudioFeedbackEp, &xHigherPriorityTaskWoken);
+    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
 }

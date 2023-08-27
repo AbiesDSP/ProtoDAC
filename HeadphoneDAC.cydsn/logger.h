@@ -10,9 +10,9 @@ typedef struct LogEntryConfig LogEntryConfig;
 /* Log handlers will transmit a log message to their destination interface.
  * This could be stdout, ram, a serial port, etc.
  * Derived handlers must initialize write and read.
-*/
+ */
 
-// Log write function signature. 
+// Log write function signature.
 typedef int (*LogHandlerWrite)(LogHandler *self, const char *src, int size);
 typedef int (*LogHandlerRead)(LogHandler *self, char *dst, int size);
 struct LogHandler
@@ -32,17 +32,17 @@ typedef int (*LogArgsFormat)(char *dst, const char *args_fmt, va_list args);
 /* A logger object will contain a list of handlers.
  * Every log message will get sent to every handler.
  * Every log message will use the same formatter.
- * A logger 
+ * A logger
  *
  */
 struct Logger
 {
     List handlers;
     enum LogLevel level;
-    
+
     LogHeaderFormat header_format;
     LogArgsFormat args_format;
-    // 
+    //
     const char *header_fmt_str;
 };
 
@@ -60,21 +60,20 @@ int logger_add_handler(Logger *log, const LogHandler *handler);
 /* Generic log function. Don't call this directly.
  * The log macros will populate these fields with the needed information.
  * The macros will populate config with the name of the source file, which you can't do with a function.
-*/
+ */
 void log_(const Logger *log, enum LogLevel level, const char *source_file, const char *args_fmt, ...);
 
 // Remove all trace logs from Release builds.
 #ifdef DEBUG
-    #define log_trace(log, args_fmt, ...) log_(log, LOG_TRACE, __FILE__, args_fmt, ##__VA_ARGS__)
+#define log_trace(log, args_fmt, ...) log_(log, LOG_TRACE, __FILE__, args_fmt, ##__VA_ARGS__)
 #else
-    #define log_trace(log, args_fmt, ...) (void)0
+#define log_trace(log, args_fmt, ...) (void)0
 #endif
 
 #define log_debug(log, args_fmt, ...) log_(log, LOG_DEBUG, __FILE__, args_fmt, ##__VA_ARGS__)
 #define log_info(log, args_fmt, ...) log_(log, LOG_INFO, __FILE__, args_fmt, ##__VA_ARGS__)
 #define log_warn(log, args_fmt, ...) log_(log, LOG_WARN, __FILE__, args_fmt, ##__VA_ARGS__)
 #define log_error(log, args_fmt, ...) log_(log, LOG_ERROR, __FILE__, args_fmt, ##__VA_ARGS__)
-
 
 // The default formatter uses the sprintf formatter.
 // header_fmt = "[%s : %s] - "

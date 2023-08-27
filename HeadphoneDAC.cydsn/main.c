@@ -1,63 +1,17 @@
 #include "project_config.h"
 #include "project.h"
 
-// #include "audio_proc.h"
-
 #include "audio_tx.h"
 #include "usb.h"
 #include "sync.h"
+#include "ear_saver.h"
+
 #include "serial.h"
 
 #include "loggers.h"
 
-// volatile int adc_update_flag = 0;
-// CY_ISR_PROTO(adc_isr);
-
-// // Audio processing buffers.
-// static float audio_left[AUDIO_PROC_BUF_SIZE];
-// static float audio_right[AUDIO_PROC_BUF_SIZE];
-// static uint8_t source_tx_buf[USB_MAX_BUF_SIZE];
-
-// static uint8_t serial_rx_buffer[SERIAL_RX_BUFFER_SIZE];
-// CY_ISR_PROTO(flush_isr);
-
-// SerialRx serial_rx;
-
 static void prvHardwareSetup(void);
-
-void SomeLogger(void *pvParameters)
-{
-    (void)pvParameters;
-
-    const TickType_t log_interval = pdMS_TO_TICKS(1000);
-
-    for (ever)
-    {
-        vTaskDelay(log_interval);
-        log_debug(&serial_log, "Hello, World!\n");
-    }
-}
-
-// Resets the EarSaver timer.
-// This will mute the amp if this task fails to reset the timer in time.
-void EarSaver(void *pvParameters)
-{
-    (void)pvParameters;
-
-    const TickType_t xStartupDelay = pdMS_TO_TICKS(100);
-    const TickType_t xTaskDelay = pdMS_TO_TICKS(2);
-
-    vTaskDelay(xStartupDelay);
-
-    TickType_t xLastWakeTime = xTaskGetTickCount();
-    EarSaverTimer_Start();
-
-    for (ever)
-    {
-        vTaskDelayUntil(&xLastWakeTime, xTaskDelay);
-        EarSaverReset_Write(1);
-    }
-}
+void SomeLogger(void *pvParameters);
 
 int main(void)
 {
@@ -68,93 +22,32 @@ int main(void)
     prvHardwareSetup();
 
     // Audio Transmit Tasks.
-    TaskHandle_t xAudioOutTask = NULL;
-    xTaskCreate(AudioTxMonitor, "Audio Tx Monitor", 1024, NULL, 4, NULL);
-    xTaskCreate(AudioTransmit, "Audio Transmit", 1024, (void *)usb_audio_out_buf, 5, &xAudioOutTask);
+    TaskHandle_t xAudioTxTask = NULL;
+    xTaskCreate(AudioTxMonitor, "Audio Tx Monitor", LOG_MIN_STACK_SIZE, NULL, AUDIO_TX_MONITOR_TASK_PRI, NULL);
+    xTaskCreate(AudioTx, "Audio Tx", 1024, (void *)usb_audio_out_buf, AUDIO_TX_TASK_PRI, &xAudioTxTask);
+    xTaskCreate(AudioTxLogging, "Audio Tx Logging", LOG_MIN_STACK_SIZE, NULL, LOG_TASK_PRI, NULL);
 
     // USB Tasks
-    usb_set_audio_output_task(xAudioOutTask);
-    xTaskCreate(USBConfigService, "USB Service Config", configMINIMAL_STACK_SIZE, NULL, 3, NULL);
-    xTaskCreate(USBServiceAudioFeedbackEp, "USB Feedback", configMINIMAL_STACK_SIZE, NULL, 3, NULL);
+    usb_set_audio_output_task(xAudioTxTask);
+    xTaskCreate(USBConfigService, "USB Service Config", configMINIMAL_STACK_SIZE, NULL, USB_TASK_PRI, NULL);
+    xTaskCreate(USBServiceAudioFeedbackEp, "USB Feedback", configMINIMAL_STACK_SIZE, NULL, USB_TASK_PRI, NULL);
 
     // USB Synchronization Monitor
-    xTaskCreate(SyncMonitor, "Sync Monitor", 512, NULL, 1, NULL);
+    xTaskCreate(SyncMonitor, "Sync Monitor", LOG_MIN_STACK_SIZE, NULL, SYNC_TASK_PRI, NULL);
 
-    // Serial Transmit Port
-    xTaskCreate(SerialSender, "Serial Sender", 512, NULL, 2, NULL);
-    // Logger to test the serial logging.
-    // xTaskCreate(SomeLogger, "Some Logger", 1024, NULL, 1, NULL);
-    xTaskCreate(AudioTxLogging, "Audio Tx Logging", 1024, NULL, 1, NULL);
+    // Serial Port
+    xTaskCreate(SerialSender, "Serial Sender", configMINIMAL_STACK_SIZE, NULL, SERIAL_TASK_PRI, NULL);
+    xTaskCreate(SerialReceiver, "Serial Receiver", configMINIMAL_STACK_SIZE, NULL, SERIAL_TASK_PRI, NULL);
 
-    xTaskCreate(EarSaver, "EarSaver", configMINIMAL_STACK_SIZE, NULL, 2, NULL);
+    // Monitor for any error conditions that would cause unpleasant distortion, and automatically mute.
+    xTaskCreate(EarSaver, "EarSaver", configMINIMAL_STACK_SIZE, NULL, EAR_SAVER_TASK_PRI, NULL);
+
+    //    xTaskCreate(SomeLogger, "Some Logger", 512, NULL, 1, NULL);
 
     vTaskStartScheduler();
 
-    // /* Serial Receive Configuration */
-    // SerialRxConfig serial_rx_config = {
-    //     .buffer = serial_rx_buffer,
-    //     .size = SERIAL_RX_BUFFER_SIZE,
-    //     .dma_ch = DMARxUART_DmaInitialize(1, 1, HI16(CYDEV_PERIPH_BASE), HI16(CYDEV_SRAM_BASE)),
-    //     .max_dma_transfer_size = 4095,
-    //     .uart_rxdata_ptr = UART_RXDATA_PTR,
-    // };
-    // serial_rx_init(&serial_rx, &serial_rx_config);
-    // flush_isr_StartEx(flush_isr);
-
-    // int n_samples = 0;
-    // float volume_gain = 1.0;
-    // float lpf_gain = 0.0;
-    // static float lpf_l_last = 0, lpf_r_last = 0;
-
     for (ever)
     {
-        //         // Process audio here.
-        //         if (usb_audio_out_update_flag)
-        //         {
-        //             usb_audio_out_update_flag = 0;
-
-        // #if ENABLE_PROC
-        //             n_samples = usb_audio_out_count / 6;
-
-        //             // Unpack bytes into float arrays.
-        //             unpack_usb_data_float(usb_audio_out_buf, n_samples, audio_left, 0);
-        //             unpack_usb_data_float(usb_audio_out_buf, n_samples, audio_right, 1);
-
-        //             // Process left channel.
-        //             lpf_exp(audio_left, proc_buf0, n_samples, lpf_gain, &lpf_l_last);
-        //             volume(proc_buf0, audio_left, n_samples, volume_gain);
-        //             // Process right channel.
-        //             lpf_exp(audio_right, proc_buf0, n_samples, lpf_gain, &lpf_r_last);
-        //             volume(proc_buf0, audio_right, n_samples, volume_gain);
-
-        //             // Pack float array into bytes into usb_tx_buf
-        //             pack_usb_data_float(source_tx_buf, n_samples, audio_left, 0);
-        //             pack_usb_data_float(source_tx_buf, n_samples, audio_right, 1);
-
-        //             // Send the processed data.
-        //             audio_out_transmit(source_tx_buf, usb_audio_out_count);
-        // #else
-        //             // Send usb data directly
-        //             audio_out_transmit(source_tx_buf, usb_audio_out_count);
-        // #endif
-        //         }
-
-        //         // New Serial Command
-        //         int rx_size = serial_rx_buffer_size(&serial_rx);
-        //         if (rx_size)
-        //         {
-        //             serial_rx_receive(&serial_rx, serial_msg_buf, rx_size);
-        //             serial_msg_buf[rx_size] = 0; // Make sure it has a delimeter...
-        //             log_info(&serial_log, "%s", serial_msg_buf);
-        //         }
-
-        //         // New adc data.
-        //         if (adc_update_flag)
-        //         {
-        //             adc_update_flag = 0;
-        //             // analog_update_filter();
-        //             // ADC_SAR_Seq_StartConvert();
-        //         }
     }
 }
 
@@ -171,18 +64,36 @@ void prvHardwareSetup(void)
     CyRamVectors[14] = (cyisraddress)xPortPendSVHandler;
     CyRamVectors[15] = (cyisraddress)xPortSysTickHandler;
 
-    // Configure serial logger
-    logger_init(&serial_log, &serial_log_handler, NULL, NULL, NULL);
-    serial_log.level = GLOBAL_LOG_LEVEL;
-
     /* Start-up the peripherals. */
-    audio_out_init();
+    audio_tx_init();
     usb_init();
     sync_init();
     serial_tx_init();
+    serial_rx_init();
+
+    // Configure serial logger
+    logger_init(&serial_log, &serial_log_handler, NULL, NULL, NULL);
+    serial_log.level = GLOBAL_LOG_LEVEL;
 }
+
+void SomeLogger(void *pvParameters)
+{
+    (void)pvParameters;
+
+    const TickType_t log_interval = pdMS_TO_TICKS(1000);
+
+    for (ever)
+    {
+        vTaskDelay(log_interval);
+        log_debug(&serial_log, "Hello, World!\n");
+    }
+}
+
+/*---------------------------------------------------------------------------*/
 void vApplicationStackOverflowHook(TaskHandle_t pxTask, char *pcTaskName)
 {
+    (void)pxTask;
+    (void)pcTaskName;
     /* The stack space has been exceeded for a task, considering allocating more. */
     taskDISABLE_INTERRUPTS();
     for (;;)
@@ -198,8 +109,3 @@ void vApplicationMallocFailedHook(void)
         ;
 }
 /*---------------------------------------------------------------------------*/
-
-// CY_ISR(adc_isr)
-// {
-//     adc_update_flag = 1;
-// }

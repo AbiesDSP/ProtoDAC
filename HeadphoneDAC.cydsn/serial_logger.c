@@ -7,10 +7,9 @@ int serial_handler_write(LogHandler *_handler, const char *src, int amount)
 {
     (void)_handler;
     int written = 0;
-    
+
     written = serial_send(src, amount);
 
-    
     return written;
 }
 

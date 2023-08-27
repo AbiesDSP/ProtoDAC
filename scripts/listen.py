@@ -9,8 +9,6 @@ class Args:
 parser = argparse.ArgumentParser()
 parser.add_argument("--delim", default="\n", type=str)
 
-READ_SIZE = 256
-
 
 def main():
     """"""
@@ -19,11 +17,15 @@ def main():
     if args.delim.startswith("\\"):
         args.delim = args.delim[1:]
 
-    with open_d2xx(read_timeout=0.1) as ftdi:
+    with open_d2xx(read_timeout=0.01) as ftdi:
+        expected_size = 32
         rx_data = bytearray()
         while True:
             # Append data to the buffer
-            rx_data.extend(ftdi.read(READ_SIZE))
+            rx_bytes = ftdi.read(expected_size)
+            if len(rx_bytes) > 0:
+                expected_size = len(rx_bytes)
+            rx_data.extend(rx_bytes)
             # Split at a delimeter.
             spl = rx_data.split(args.delim.encode(), 1)
             # New, complete message.

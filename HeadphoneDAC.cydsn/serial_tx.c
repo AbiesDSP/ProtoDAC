@@ -4,13 +4,19 @@
 #include <DMATxUART_dma.h>
 #include "uart_tx_isr.h"
 
-static uint8_t transmit_buffer[SERIAL_TX_BUFFER_SIZE];
+static uint8_t tx_buffer[SERIAL_TX_BUFFER_SIZE];
 
 static uint8_t dma_ch;
 static uint8_t dma_tds[SERIAL_TX_MAX_TDS];
 
 static TaskHandle_t xSerialSender = NULL;
-SemaphoreHandle_t serial_tx_lock;
+static QueueHandle_t xDeltaQueue = NULL;
+
+static int buffer_size = 0;
+static Cptr write_ptr;
+static Cptr read_ptr;
+
+static int last_transfer_size = 0;
 
 #define TX_DONE_BIT 0x1
 #define NEW_DATA_BIT 0x2
@@ -28,37 +34,20 @@ void serial_tx_init(void)
         dma_tds[i] = CyDmaTdAllocate();
     }
 
+    xDeltaQueue = xQueueCreate(32, sizeof(int));
+
+    // Initialize transmit buffer circular pointers.
+    cptr_init(&write_ptr, tx_buffer, SERIAL_TX_BUFFER_SIZE);
+    cptr_init(&read_ptr, tx_buffer, SERIAL_TX_BUFFER_SIZE);
+
     UART_Start();
     uart_tx_isr_StartEx(transfer_done_isr);
-
-    serial_tx_lock = xSemaphoreCreateMutex();
 }
-
-static int buffer_size = 0;
-static Cptr write_ptr;
-static Cptr read_ptr;
 
 int serial_send(const void *src, int amount)
 {
-    // Check for free space?
-    // Copy data into the buffer
-//    const TickType_t xMaxBlockTime = pdMS_TO_TICKS(1);
-    
-//    if (xSemaphoreTake(serial_tx_lock, xMaxBlockTime))
-//    {
-        cptr_copy_into(&write_ptr, src, amount);
-        buffer_size += amount;
-
-        // xTaskNotify(xSerialSender, NEW_DATA_BIT, eSetBits);
-        xTaskNotifyGive(xSerialSender);
-        // xSemaphoreGive(serial_tx_lock);
-//    }
-//    else
-//    {
-//        amount = 0;
-//    }
-    
-
+    cptr_copy_into(&write_ptr, src, amount);
+    xQueueSend(xDeltaQueue, &amount, 0);
     return amount;
 }
 
@@ -68,37 +57,36 @@ void SerialSender(void *pvParameters)
 
     xSerialSender = xTaskGetCurrentTaskHandle();
 
-    // Initialize transmit buffer circular pointers.
-    cptr_init(&write_ptr, transmit_buffer, SERIAL_TX_BUFFER_SIZE);
-    cptr_init(&read_ptr, transmit_buffer, SERIAL_TX_BUFFER_SIZE);
-
     const TickType_t xMaxBlockTime = pdMS_TO_TICKS(10);
 
-    uint32_t notifications = 0;
-
-    int last_transfer_size = 0;
+    int update_size = 0;
 
     for (ever)
     {
-        notifications = ulTaskNotifyTake(pdTRUE, xMaxBlockTime);
-        //
-        if(notifications)
+        // Transfer completed.
+        if (ulTaskNotifyTake(pdTRUE, xMaxBlockTime))
         {
-            // Tx transfer finished.
             buffer_size -= last_transfer_size;
             last_transfer_size = 0;
-            //
+
             if (buffer_size)
             {
                 last_transfer_size = buffer_size;
                 configure_dma();
             }
         }
-        // Timed out and we have data waiting.
-        else if (buffer_size)
+        else
         {
-            last_transfer_size = buffer_size;
-            configure_dma();
+            if (buffer_size)
+            {
+                last_transfer_size = buffer_size;
+                configure_dma();
+            }
+        }
+        // More tx data.
+        if (xQueueReceive(xDeltaQueue, &update_size, 0))
+        {
+            buffer_size += update_size;
         }
     }
 }
@@ -154,7 +142,8 @@ int serial_tx_free_size(void)
 CY_ISR(transfer_done_isr)
 {
     BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-    vTaskNotifyGiveFromISR(xSerialSender, &xHigherPriorityTaskWoken);
-    // xTaskNotifyFromISR(xSerialSender, TX_DONE_BIT, eSetBits, &xHigherPriorityTaskWoken);
+    // xQueueSendFromISR(xDeltaQueue, &last_transfer_size, &xHigherPriorityTaskWoken);
+    xTaskNotifyFromISR(xSerialSender, last_transfer_size, eSetValueWithOverwrite, &xHigherPriorityTaskWoken);
+    //    vTaskNotifyGiveFromISR(xSerialSender, &xHigherPriorityTaskWoken);
     portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
 }

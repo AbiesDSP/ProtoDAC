@@ -12,5 +12,3 @@ LogHandler stdout_log_handler = {
     .write = stdout_write,
     .read = NULL,
 };
-
-

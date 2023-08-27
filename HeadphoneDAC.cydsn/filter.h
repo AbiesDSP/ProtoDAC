@@ -1,6 +1,5 @@
 #pragma once
-#include "list.h"
-
+#include "list2.h"
 #include <stdint.h>
 
 typedef void (*FilterProcess)(const float *src, float *dst, int n);

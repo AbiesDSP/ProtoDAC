@@ -10,6 +10,11 @@
 find_package(Catch2 3 REQUIRED)
 include(Catch)
 
+include_directories(${CMAKE_SOURCE_DIR}/HeadphoneDAC.cydsn)
+include_directories(${CMAKE_SOURCE_DIR}/HeadphoneDAC.cydsn/Generated_Source/PSoC5)
+include_directories(${CMAKE_SOURCE_DIR}/FreeRTOS/Source/portable/MSVC-MingW)
+include_directories(${CMAKE_SOURCE_DIR}/FreeRTOS/Source/include)
+
 # Main test runner.
 add_executable(run_all_tests
     test_logging.cpp
