@@ -2,10 +2,13 @@
 
 Uses a PSoC 5LP microcontroller as a USB to I2S bridge.
 
-## PSoC Project
+# Installation and Building
 
-Build this project using PSoC Creator 4.4
+Use PSoC Creator 4.4 to build the PSoC project
 
-## PCB Project
+Use CMake/Python/VSCode to build and run tests. Catch2 test framework required for tests.
 
-Kicad project and gerbers are saved under pcb/
+# Installing Cyflash
+Install python requirements (use a venv if you prefer)
+
+    pip install -r requirements.txt
