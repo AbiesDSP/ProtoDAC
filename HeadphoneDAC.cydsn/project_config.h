@@ -11,6 +11,11 @@
 // Enable processing data before transmitting.
 #define ENABLE_PROC 1
 
+// Switches
+#define SW_BOOT 0x8
+#define SW_SOMESWITCH 0x4
+#define SW_MUTE 0x2
+
 // Stack sizes
 #define LOG_MIN_STACK_SIZE 512
 
@@ -77,8 +82,12 @@
 #define SERIAL_RX_MAX_TDS 4
 
 // Logging
-#define GLOBAL_LOG_LEVEL LOG_INFO
+#define GLOBAL_LOG_LEVEL LOG_DEBUG
 #define LOG_MESSAGE_BUF_SIZE 1024
+
+// Bootloader
+#define BOOTER_HOLD_WAIT 3000
+#define BOOTER_REFRESH_WAIT 500
 
 //
 #define DMA_MAX_TRANSFER_SIZE 4095

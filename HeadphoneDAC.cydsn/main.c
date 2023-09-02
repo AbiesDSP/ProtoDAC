@@ -10,23 +10,15 @@
 
 #include "loggers.h"
 
-#define BOOT_SW 0x8
-
 static void prvHardwareSetup(void);
 void SomeLogger(void *pvParameters);
+void Booter(void *pvParameters);
 
 int main(void)
 {
 #if !TEST_BUILD
     CyGlobalIntEnable;
 #endif
-
-    CyDelay(2);
-    // If the boot switch is held on startup, start the bootloader.
-    if ((SwitchStatus_Read() & BOOT_SW) == 0)
-    {
-        Bootloadable_Load();
-    }
 
     prvHardwareSetup();
 
@@ -51,6 +43,9 @@ int main(void)
     // Monitor for any error conditions that would cause unpleasant distortion, and automatically mute.
     xTaskCreate(EarSaver, "EarSaver", configMINIMAL_STACK_SIZE, NULL, EAR_SAVER_TASK_PRI, NULL);
 
+    // Bootload
+    xTaskCreate(Booter, "Booter", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+    
     //    xTaskCreate(SomeLogger, "Some Logger", 512, NULL, 1, NULL);
 
     vTaskStartScheduler();
@@ -83,6 +78,41 @@ void prvHardwareSetup(void)
     // Configure serial logger
     logger_init(&serial_log, &serial_log_handler, NULL, NULL, NULL);
     serial_log.level = GLOBAL_LOG_LEVEL;
+}
+
+void Booter(void *pvParameters)
+{
+    (void)pvParameters;
+    
+    // Boot button must be held this long to trigger bootloading.
+    const TickType_t xHoldDelay = pdMS_TO_TICKS(BOOTER_HOLD_WAIT);
+    
+    // Check the state of the button this often.
+    const TickType_t xRefreshDelay = pdMS_TO_TICKS(BOOTER_REFRESH_WAIT);
+    
+    // If the boot switch is held on startup, start the bootloader.
+    if ((SwitchStatus_Read() & SW_BOOT) == 0)
+    {
+        Bootloadable_Load();
+    }
+    
+    TickType_t xLastTime = xTaskGetTickCount();
+    
+    for (ever)
+    {
+        vTaskDelayUntil(&xLastTime, xRefreshDelay);
+        // Boot switch is held down.
+        if (!(SwitchStatus_Read() & SW_BOOT))
+        {
+            // Check if it's held down for xHoldDelay.
+            vTaskDelayUntil(&xLastTime, xHoldDelay);
+            if (!(SwitchStatus_Read() & SW_BOOT))
+            {
+                // Start the bootloader.
+                Bootloadable_Load();
+            }
+        }
+    }
 }
 
 void SomeLogger(void *pvParameters)

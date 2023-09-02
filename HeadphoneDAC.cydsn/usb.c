@@ -71,7 +71,7 @@ void USBConfigService(void *pvParameters)
 {
     (void)pvParameters;
 
-    uint8_t usb_alt_setting[USB_NO_STREAM_IFACE] = {0xFF, 0xFF};
+    uint8_t usb_alt_setting[USB_NO_STREAM_IFACE] = {0xFF, 0xFF, 0xFF};
     const TickType_t xRefreshDelay = pdMS_TO_TICKS(USB_CONFIG_SERVICE_MAX_WAIT);
 
     // Start and enumerate USB.
@@ -102,6 +102,10 @@ void USBConfigService(void *pvParameters)
             {
                 usb_alt_setting[USB_IN_IFACE_INDEX] = USBFS_GetInterfaceSetting(2);
                 // Audio in stuff.
+            }
+            // USBUART stuff
+            if (usb_alt_setting[USB_CDC_IFACE_INDEX] != USBFS_GetInterfaceSetting(3))
+            {
             }
         }
         vTaskDelayUntil(&xLastWakeTime, xRefreshDelay);
