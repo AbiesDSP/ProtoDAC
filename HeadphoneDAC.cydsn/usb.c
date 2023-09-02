@@ -59,29 +59,29 @@ void USBServiceAudioFeedbackEp(void *pvParameters)
             fb_data[0] = _feedback & 0xFF;
 
             // Load new feedback into ep.
-            if ((USBFS_GetEPState(AUDIO_FB_EP) == USBFS_IN_BUFFER_EMPTY))
+            if ((USBFS_GetEPState(USB_AUDIO_FB_EP) == USBFS_IN_BUFFER_EMPTY))
             {
-                USBFS_LoadInEP(AUDIO_FB_EP, USBFS_NULL, 3);
+                USBFS_LoadInEP(USB_AUDIO_FB_EP, USBFS_NULL, 3);
             }
         }
     }
 }
 
-static uint8_t usb_cdc_tx_buf[USB_SERIAL_BUF_SIZE];
-static uint8_t usb_cdc_rx_buf[USB_SERIAL_BUF_SIZE];
+static uint8_t serial_tx_buf[USB_SERIAL_BUF_SIZE];
+static uint8_t serial_rx_buf[USB_SERIAL_BUF_SIZE];
 
 // Fun fun usb stuff.
 void USBConfigService(void *pvParameters)
 {
     (void)pvParameters;
 
-    uint8_t audio_alt_setting[2] = {0xFF, 0xFF};
-    uint8_t serial_alt_setting[1] = {0xFF};
+    uint8_t audio_alt_setting[USB_AUDIO_OUT_N_ALT] = {USB_ALT_INVALID, USB_ALT_INVALID};
+    uint8_t serial_alt_setting[1] = {USB_ALT_INVALID};
     
     const TickType_t xRefreshDelay = pdMS_TO_TICKS(USB_CONFIG_SERVICE_MAX_WAIT);
     
     // Start and enumerate USB.
-    USBFS_Start(USBFS_AUDIO_DEVICE, USBFS_DWR_VDDD_OPERATION);
+    USBFS_Start(USBFS_DEVICE, USBFS_DWR_VDDD_OPERATION);
     while (!USBFS_GetConfiguration())
         ;
     
@@ -97,12 +97,12 @@ void USBConfigService(void *pvParameters)
             {
                 audio_alt_setting[0] = USBFS_GetInterfaceSetting(1);
 
-                if (audio_alt_setting[0] != USB_ALT_ZEROBW)
+                if (audio_alt_setting[0] != USB_AUDIO_OUT_ALT_ZEROBW)
                 {
-                    USBFS_ReadOutEP(AUDIO_OUT_EP, (uint8_t *)usb_audio_out_buf, USB_MAX_BUF_SIZE);
-                    USBFS_EnableOutEP(AUDIO_OUT_EP);
-                    USBFS_LoadInEP(AUDIO_FB_EP, (const uint8_t *)fb_data, 3);
-                    USBFS_LoadInEP(AUDIO_FB_EP, USBFS_NULL, 3);
+                    USBFS_ReadOutEP(USB_AUDIO_OUT_EP, (uint8_t *)usb_audio_out_buf, USB_MAX_BUF_SIZE);
+                    USBFS_EnableOutEP(USB_AUDIO_OUT_EP);
+                    USBFS_LoadInEP(USB_AUDIO_FB_EP, (const uint8_t *)fb_data, 3);
+                    USBFS_LoadInEP(USB_AUDIO_FB_EP, USBFS_NULL, 3);
                 }
                 // Initialize feedback for new sample rate
             }
@@ -112,18 +112,18 @@ void USBConfigService(void *pvParameters)
                 // Audio in stuff.
             }
             // USBUART stuff
-            if (serial_alt_setting[0] != USBFS_GetInterfaceSetting(USB_SERIAL_IFACE))
+            if (serial_alt_setting[0] != USBFS_GetInterfaceSetting(USB_SERIAL_DATA_IFACE))
             {
-                serial_alt_setting[0] = USBFS_GetInterfaceSetting(USB_SERIAL_IFACE);
-                USBFS_LoadInEP(SERIAL_TX_EP, usb_cdc_tx_buf, USB_SERIAL_BUF_SIZE);
-                USBFS_ReadOutEP(SERIAL_RX_EP, usb_cdc_rx_buf, USB_SERIAL_BUF_SIZE);
-                USBFS_EnableOutEP(SERIAL_RX_EP);
+                serial_alt_setting[0] = USBFS_GetInterfaceSetting(USB_SERIAL_DATA_IFACE);
+                USBFS_LoadInEP(USB_SERIAL_TX_EP, serial_tx_buf, USB_SERIAL_BUF_SIZE);
+                USBFS_ReadOutEP(USB_SERIAL_RX_EP, serial_rx_buf, USB_SERIAL_BUF_SIZE);
+                USBFS_EnableOutEP(USB_SERIAL_RX_EP);
             }
         }
         vTaskDelayUntil(&xLastWakeTime, xRefreshDelay);
-        if(USBFS_GetEPState(7)==USBFS_IN_BUFFER_EMPTY)
+        if(USBFS_GetEPState(USB_SERIAL_TX_EP)==USBFS_IN_BUFFER_EMPTY)
         {
-            strcpy(usb_cdc_tx_buf, "Hello, World!\n");
+            strcpy((char*)serial_tx_buf, "Hello, World!\n");
             USBFS_LoadEP(7,NULL,14);
         }
     }
@@ -133,7 +133,7 @@ CY_ISR(usb_audio_out_ep_isr)
 {
     BaseType_t xHigherPriorityTaskWoken = pdFALSE;
     // Get the number of bytes transferred.
-    uint32_t audio_out_count = USBFS_GetEPCount(AUDIO_OUT_EP);
+    uint32_t audio_out_count = USBFS_GetEPCount(USB_AUDIO_OUT_EP);
 
     // Inform the audio out task there is new data.
     xTaskNotifyFromISR(xAudioOutTask, audio_out_count, eSetValueWithOverwrite, &xHigherPriorityTaskWoken);

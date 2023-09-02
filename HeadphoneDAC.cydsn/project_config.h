@@ -37,15 +37,31 @@
 #define USB_FEEDBACK_MAX_WAIT 60
 #define USB_SERIAL_BUF_SIZE 64
 
-#define USBFS_AUDIO_DEVICE 0
-#define AUDIO_INTERFACE 1
-#define AUDIO_OUT_EP 1
-#define AUDIO_IN_EP 2
-#define AUDIO_FB_EP 3
+// USB Interface Configuration
+#define USBFS_DEVICE 0
+#define USB_ALT_INVALID 0xFF
 
-#define USB_SERIAL_IFACE 4
-#define SERIAL_TX_EP 7
-#define SERIAL_RX_EP 8
+#define USB_AUDIO_CTL_IFACE 0
+#define USB_AUDIO_CTL_EP 5
+
+#define USB_AUDIO_OUT_IFACE 1
+#define USB_AUDIO_OUT_EP 1
+#define USB_AUDIO_OUT_N_ALT 2
+#define USB_AUDIO_OUT_ALT_ZEROBW 0
+#define USB_AUDIO_OUT_ALT_STREAM 1
+
+#define USB_AUDIO_FB_EP 3
+//#define USB_AUDIO_IN_EP 2
+
+#define USB_AUDIO_HID_IFACE 2
+#define USB_AUDIO_HID_EP 4
+
+#define USB_SERIAL_CTL_IFACE 3
+#define SERIAL_CTL_EP 6
+
+#define USB_SERIAL_DATA_IFACE 4
+#define USB_SERIAL_TX_EP 7
+#define USB_SERIAL_RX_EP 8
 
 // USB Synchronization
 #define SYNC_WINDOW_SIZE 128

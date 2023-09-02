@@ -5,16 +5,6 @@
 #define USB_STS_INIT 0x01
 #define USB_STS_ENUM 0x02
 
-#define USB_NO_STREAM_IFACE 3
-#define USB_OUT_IFACE_INDEX 0
-#define USB_IN_IFACE_INDEX 1
-#define USB_CDC_IFACE_INDEX 2
-
-#define USB_ALT_ZEROBW 0
-#define USB_ALT_ACTIVE_24 2
-#define USB_ALT_ACTIVE_16 1
-#define USB_ALT_INVALID 0xFF
-
 extern const uint8_t *usb_audio_out_buf;
 
 // Set up USB.
