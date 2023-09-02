@@ -2,6 +2,7 @@
 #include "project_config.h"
 #include "audio_tx.h"
 #include <USBFS.h>
+#include <USBFS_cdc.h>
 
 uint8_t _usb_audio_out_buf[USB_MAX_BUF_SIZE];
 const uint8_t *usb_audio_out_buf = _usb_audio_out_buf;
@@ -66,30 +67,37 @@ void USBServiceAudioFeedbackEp(void *pvParameters)
     }
 }
 
+static uint8_t usb_cdc_tx_buf[USB_SERIAL_BUF_SIZE];
+static uint8_t usb_cdc_rx_buf[USB_SERIAL_BUF_SIZE];
+
 // Fun fun usb stuff.
 void USBConfigService(void *pvParameters)
 {
     (void)pvParameters;
 
-    uint8_t usb_alt_setting[USB_NO_STREAM_IFACE] = {0xFF, 0xFF, 0xFF};
+    uint8_t audio_alt_setting[2] = {0xFF, 0xFF};
+    uint8_t serial_alt_setting[1] = {0xFF};
+    
     const TickType_t xRefreshDelay = pdMS_TO_TICKS(USB_CONFIG_SERVICE_MAX_WAIT);
-
+    
     // Start and enumerate USB.
     USBFS_Start(USBFS_AUDIO_DEVICE, USBFS_DWR_VDDD_OPERATION);
-    while (0u == USBFS_GetConfiguration())
+    while (!USBFS_GetConfiguration())
         ;
-
+    
+    USBFS_CDC_Init();
     TickType_t xLastWakeTime = xTaskGetTickCount();
     
     for (ever)
     {
         if (USBFS_IsConfigurationChanged())
         {
-            if (usb_alt_setting[USB_OUT_IFACE_INDEX] != USBFS_GetInterfaceSetting(1))
+            // Audio out changed.
+            if (audio_alt_setting[0] != USBFS_GetInterfaceSetting(1))
             {
-                usb_alt_setting[USB_OUT_IFACE_INDEX] = USBFS_GetInterfaceSetting(1);
+                audio_alt_setting[0] = USBFS_GetInterfaceSetting(1);
 
-                if (usb_alt_setting[USB_OUT_IFACE_INDEX] != USB_ALT_ZEROBW)
+                if (audio_alt_setting[0] != USB_ALT_ZEROBW)
                 {
                     USBFS_ReadOutEP(AUDIO_OUT_EP, (uint8_t *)usb_audio_out_buf, USB_MAX_BUF_SIZE);
                     USBFS_EnableOutEP(AUDIO_OUT_EP);
@@ -98,17 +106,26 @@ void USBConfigService(void *pvParameters)
                 }
                 // Initialize feedback for new sample rate
             }
-            if (usb_alt_setting[USB_IN_IFACE_INDEX] != USBFS_GetInterfaceSetting(2))
+            if (audio_alt_setting[1] != USBFS_GetInterfaceSetting(2))
             {
-                usb_alt_setting[USB_IN_IFACE_INDEX] = USBFS_GetInterfaceSetting(2);
+                audio_alt_setting[1] = USBFS_GetInterfaceSetting(2);
                 // Audio in stuff.
             }
             // USBUART stuff
-            if (usb_alt_setting[USB_CDC_IFACE_INDEX] != USBFS_GetInterfaceSetting(3))
+            if (serial_alt_setting[0] != USBFS_GetInterfaceSetting(USB_SERIAL_IFACE))
             {
+                serial_alt_setting[0] = USBFS_GetInterfaceSetting(USB_SERIAL_IFACE);
+                USBFS_LoadInEP(SERIAL_TX_EP, usb_cdc_tx_buf, USB_SERIAL_BUF_SIZE);
+                USBFS_ReadOutEP(SERIAL_RX_EP, usb_cdc_rx_buf, USB_SERIAL_BUF_SIZE);
+                USBFS_EnableOutEP(SERIAL_RX_EP);
             }
         }
         vTaskDelayUntil(&xLastWakeTime, xRefreshDelay);
+        if(USBFS_GetEPState(7)==USBFS_IN_BUFFER_EMPTY)
+        {
+            strcpy(usb_cdc_tx_buf, "Hello, World!\n");
+            USBFS_LoadEP(7,NULL,14);
+        }
     }
 }
 

@@ -33,14 +33,19 @@
 
 // More than enough for 96kHz
 #define USB_MAX_BUF_SIZE 1024
-#define USB_CONFIG_SERVICE_MAX_WAIT 5
+#define USB_CONFIG_SERVICE_MAX_WAIT 100
 #define USB_FEEDBACK_MAX_WAIT 60
+#define USB_SERIAL_BUF_SIZE 64
 
 #define USBFS_AUDIO_DEVICE 0
 #define AUDIO_INTERFACE 1
 #define AUDIO_OUT_EP 1
 #define AUDIO_IN_EP 2
 #define AUDIO_FB_EP 3
+
+#define USB_SERIAL_IFACE 4
+#define SERIAL_TX_EP 7
+#define SERIAL_RX_EP 8
 
 // USB Synchronization
 #define SYNC_WINDOW_SIZE 128

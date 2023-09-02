@@ -93,7 +93,9 @@ void Booter(void *pvParameters)
     // If the boot switch is held on startup, start the bootloader.
     if ((SwitchStatus_Read() & SW_BOOT) == 0)
     {
-        Bootloadable_Load();
+        #ifdef CY_BOOTLOADABLE_Bootloadable_H
+            Bootloadable_Load();
+        #endif
     }
     
     TickType_t xLastTime = xTaskGetTickCount();
@@ -109,7 +111,9 @@ void Booter(void *pvParameters)
             if (!(SwitchStatus_Read() & SW_BOOT))
             {
                 // Start the bootloader.
-                Bootloadable_Load();
+                #ifdef CY_BOOTLOADABLE_Bootloadable_H
+                    Bootloadable_Load();
+                #endif
             }
         }
     }

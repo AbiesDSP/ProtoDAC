@@ -1,5 +1,6 @@
 from contextlib import contextmanager
 import ftd2xx
+import serial
 
 
 @contextmanager
@@ -14,6 +15,17 @@ def open_d2xx(
         dev.setBaudRate(int(baud))
         dev.setLatencyTimer(int(latency))
         dev.setTimeouts(int(read_timeout * 1000), int(write_timeout * 1000))
+        yield dev
+    finally:
+        dev.close()
+
+
+@contextmanager
+def open_port(port: str = "COM6"):
+    """"""
+    dev = serial.Serial(port, timeout=1.0)
+    try:
+        # dev.open()
         yield dev
     finally:
         dev.close()
