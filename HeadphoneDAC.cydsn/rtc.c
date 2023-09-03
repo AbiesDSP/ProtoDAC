@@ -1,24 +1,24 @@
 #include "project_config.h"
-#include "nsrtc.h"
+#include "rtc.h"
 #include <project.h>
 
 static uint32_t timestamp = 0;
-static TaskHandle_t NSRTCTask = NULL;
+static TaskHandle_t RTCTask = NULL;
 
-CY_ISR_PROTO(nsrtc_isr);
+CY_ISR_PROTO(rtc_inc_isr);
 
-void nsrtc_init(void)
+void rtc_init(void)
 {
-    rtc_isr_StartEx(nsrtc_isr);
-    NSRTC_Timer_Start();
+    rtc_isr_StartEx(rtc_inc_isr);
+    RTC_Timer_Start();
 }
 
-void nsrtc_set_time(uint32_t _timestamp)
+void rtc_set_time(uint32_t _timestamp)
 {
     timestamp = _timestamp;
 }
 
-uint32_t nsrtc_get_time(void)
+uint32_t rtc_get_time(void)
 {
     return timestamp;
 }
@@ -35,7 +35,7 @@ int _iface_write(void *self, AvrilCommand *cmd)
     {
         err = -1;
     }
-    
+
     return err;
 }
 
@@ -51,24 +51,24 @@ int _iface_read(void *self, AvrilCommand *cmd)
     {
         err = -1;
     }
-    
+
     return err;
 }
 
-AvrilInterface NSRTCIface = {
+AvrilInterface RTCIface = {
     .write = _iface_write,
     .read = _iface_read,
     .size = 4,
 };
 
-void NsrtcUpdate(void *pvParameters)
+void RTCUpdate(void *pvParameters)
 {
-    (void) pvParameters;
-    
-    NSRTCTask = xTaskGetCurrentTaskHandle();
-    
+    (void)pvParameters;
+
+    RTCTask = xTaskGetCurrentTaskHandle();
+
     const TickType_t MaxWait = pdMS_TO_TICKS(500);
-    
+
     for (ever)
     {
         if (ulTaskNotifyTake(pdTRUE, MaxWait))
@@ -78,12 +78,12 @@ void NsrtcUpdate(void *pvParameters)
     }
 }
 
-CY_ISR(nsrtc_isr)
+CY_ISR(rtc_inc_isr)
 {
     BaseType_t xHigherPriorityTaskWoken = pdFALSE;
 
     // New update from the sync_counter. This will increment the number of notifications.
-    vTaskNotifyGiveFromISR(NSRTCTask, &xHigherPriorityTaskWoken);
+    vTaskNotifyGiveFromISR(RTCTask, &xHigherPriorityTaskWoken);
 
     portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
 }

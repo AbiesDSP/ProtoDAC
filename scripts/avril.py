@@ -68,8 +68,13 @@ class Avril:
     def __exit__(self, exc_type, exc_value, exc_traceback):
         self.dev.close()
 
-    def write(self, address: int, dat: bytes):
+    def write(self, address: int, *regs: int):
         """"""
+        n = len(regs)
+        Ls = "L" * n
+        fmtstr = f"<{Ls}"
+        dat = struct.pack(fmtstr, *regs)
+
         address |= AVRIL_WE
         cmd = AvrilCommand(len(dat), address, dat)
         self.dev.write(cmd.pack())

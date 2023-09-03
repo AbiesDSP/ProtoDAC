@@ -1,6 +1,5 @@
 #pragma once
 #include "log_level.h"
-#include "nsrtc.h"
 #include <stdint.h>
 #include <stdarg.h>
 

@@ -5,12 +5,18 @@ static int enter_flag = 0;
 
 static int _booter_write(void *self, AvrilCommand *cmd)
 {
+    (void)self;
+    (void)cmd;
+    
     enter_flag = 1;
     return 0;
 }
 
 static int _booter_read(void *self, AvrilCommand *cmd)
 {
+    (void)self;
+    (void)cmd;
+    return 0;
 }
 
 AvrilInterface BooterIface = {

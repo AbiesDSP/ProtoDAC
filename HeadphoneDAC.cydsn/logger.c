@@ -1,5 +1,5 @@
 #include "logger.h"
-#include "nsrtc.h"
+#include "rtc.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -81,7 +81,7 @@ void log_(const Logger *log, enum LogLevel level, const char *source_file, const
         // Format into the message buffer.
         // Format header
         // level, source_file, timestamp,
-        int message_size = log->header_format(message_buf, log->header_fmt_str, log_level2str(level), source_file, nsrtc_get_time());
+        int message_size = log->header_format(message_buf, log->header_fmt_str, log_level2str(level), source_file, rtc_get_time());
         // Format args
         message_size += log->args_format(message_buf + message_size, args_fmt, args);
 

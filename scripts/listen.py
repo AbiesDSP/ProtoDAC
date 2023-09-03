@@ -2,6 +2,7 @@ import argparse
 import time
 from datetime import datetime
 from avril import Avril
+import struct
 
 
 class Args:
@@ -29,6 +30,9 @@ def parse_msg(msg: str):
     return fmt_msg
 
 
+TIMESTAMP_ADDRESS = 2048
+
+
 def main():
     """"""
     args = parser.parse_args(namespace=Args)
@@ -37,6 +41,9 @@ def main():
         args.delim = args.delim[1:]
 
     with Avril(timeout=0.05) as av:
+        # Set the timestamp
+        av.write(TIMESTAMP_ADDRESS, int(time.time()))
+
         rx_data = bytearray()
         while True:
             # Read up to the max from the device. times out if fewer.
