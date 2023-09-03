@@ -74,8 +74,8 @@
 #define SYNC_MAX_WAIT 60
 
 // Audio transmit buffer
-#define AUDIO_TX_TRANSFER_SIZE 588
-#define AUDIO_TX_N_TDS 16
+#define AUDIO_TX_TRANSFER_SIZE 512
+#define AUDIO_TX_N_TDS 24
 #define AUDIO_TX_BUF_SIZE (AUDIO_TX_TRANSFER_SIZE * AUDIO_TX_N_TDS)
 // Turn on audio when it's half full
 #define AUDIO_TX_ACTIVE_LIMIT ((AUDIO_TX_TRANSFER_SIZE * AUDIO_TX_N_TDS) >> 1)
@@ -87,7 +87,7 @@
 #define AUDIO_TX_TX_MAX_WAIT 1
 #define AUDIO_TX_MONITOR_MAX_WAIT 1
 #define AUDIO_TX_LOGGING_INTERVAL 2000
-#define AUDIO_TX_DELTA_QUEUE_SIZE 32
+#define AUDIO_TX_DELTA_QUEUE_SIZE 4
 #define AUDIO_TX_MAX_BS_TDS ((AUDIO_TX_BUF_SIZE + DMA_MAX_TRANSFER_SIZE - 1) / DMA_MAX_TRANSFER_SIZE) // Sufficient number of tds for entire memory.
 
 // Ear Saver Config

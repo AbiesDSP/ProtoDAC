@@ -6,13 +6,9 @@
 #include "usb.h"
 #include "audio_tx.h"
 
-#include "loggers.h"
+#include "knobs.h"
 
-#include "FreeRTOS.h"
-#include "task.h"
-#include "queue.h"
-#include "semphr.h"
-#include "portable.h"
+#include "loggers.h"
 
 CY_ISR_PROTO(sync_counter_update_isr);
 
@@ -82,7 +78,7 @@ void SyncMonitor(void *_AudioFbTask)
                 int sample_rate = 0.5 + (float)rolling_average / 16.384;
                 // Tx buffer status.
                 // int buf_percent = (100 * audio_tx_size() / AUDIO_TX_BUF_SIZE);
-                log_debug(&main_log, "SR: %d, fb: %d\n", sample_rate, sfb);
+                log_debug(&main_log, "SR: %d, fb: %d\n", sample_rate, rolling_average);
                 locked = 1;
             }
             // Update usb once buffer is full.

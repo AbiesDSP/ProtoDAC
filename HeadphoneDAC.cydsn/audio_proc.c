@@ -19,6 +19,13 @@ static inline void pack_sample(int32_t sample, uint8_t *dst)
     dst[0] = ((sample >> 8) & 0xFF);
 }
 
+static inline void pack_sample_noswap(int32_t sample, uint8_t *dst)
+{
+    dst[0] = ((sample >> 24) & 0xFF);
+    dst[1] = ((sample >> 16) & 0xFF);
+    dst[2] = ((sample >> 8) & 0xFF);
+}
+
 int unpack_usb_data(const uint8_t *usb_buf, int n_samples, int32_t *dst, int channel)
 {
     int offset = channel ? 3 : 0;
@@ -69,6 +76,19 @@ void pack_usb_data_float(uint8_t *usb_buf, int n_samples, const float *src, int 
     {
         sample = src[i] >= 0 ? src[i] * (float)INT32_MAX : src[i] * (float)((float)INT32_MAX + 1);
         pack_sample(sample, dst);
+        dst += 6;
+    }
+}
+
+void pack_i2s_data_float(uint8_t *swap_buf, int n_samples, const float *src, int channel)
+{
+    int offset = channel ? 3 : 0;
+    uint8_t *dst = swap_buf + offset;
+    int32_t sample;
+    for (int i = 0; i < n_samples; i++)
+    {
+        sample = src[i] >= 0 ? src[i] * (float)INT32_MAX : src[i] * (float)((float)INT32_MAX + 1);
+        pack_sample_noswap(sample, dst);
         dst += 6;
     }
 }

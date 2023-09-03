@@ -1,20 +1,14 @@
 #include "project_config.h"
 
 #include "audio_tx.h"
+#include "audio_proc.h"
+#include "cptr.h"
+#include "knobs.h"
 #include "loggers.h"
 
 #include <I2S.h>
-
-#include <byte_swap_tx.h>
-#include <byte_swap_tx_defs.h>
-
-#include <DMA_BS_RX_dma.h>
-#include <DMA_BS_TX_dma.h>
 #include <DMA_I2S_TX_dma.h>
-
 #include <i2s_tx_isr.h>
-
-// #include "FreeRTOS.h"
 
 #include <stdlib.h>
 
@@ -23,25 +17,10 @@
 static int tx_buffer_size = 0;
 static uint8_t tx_status = 0;
 
-// Transfers audio data to the byte swap component
-static uint8_t source_dma_ch;
-static uint8_t source_dma_td[1];
-
-// Optional byte-swap operation to swap the endianness of 24 bit data.
-// Transfers data from memory to the byte-swap component,
-// Then the endian-swapped bytes are transferred to the transmit buffer.
-
 // I2S Transmit dma. Transfers data from the transmit buffer to the i2s component.
 // dma tds transfers of equal sizes will be chained and there will be an interrupt for each transfer.
 // This interrupt gives an update on the buffer size.
-/*
-    This will infinitely loop and send the transmit buffer.
-*/
 
-// Initiate a dma transaction
-static void configure_source_dma(const uint8_t *src, int amount);
-// Configure byte swap dma
-static void bs_dma_config(void);
 // Configure i2s dma
 static void i2s_dma_config(void);
 
@@ -49,7 +28,10 @@ static void i2s_dma_config(void);
 CY_ISR_PROTO(i2s_tx_done_isr);
 
 static uint8_t tx_buffer[AUDIO_TX_BUF_SIZE];
-static QueueHandle_t xTxBufferDeltaQueue = NULL;
+static QueueHandle_t TxBufferDeltaQueue = NULL;
+static uint8_t swap_buf[USB_AUDIO_EP_BUF_SIZE];
+
+static Cptr tx_write_ptr;
 
 int audio_tx_size(void)
 {
@@ -63,12 +45,8 @@ uint8_t audio_tx_status(void)
 // Configure and start up all components for audio
 void audio_tx_init(void)
 {
-    // Send source data to the byte swap component
-    source_dma_ch = DMA_BS_RX_DmaInitialize(1u, 1u, HI16(CYDEV_SRAM_BASE), HI16(CYDEV_PERIPH_BASE));
-    source_dma_td[0] = CyDmaTdAllocate();
-
-    // Configure byte swap to transfer data to the tx_buffer.
-    bs_dma_config();
+    // i2s buffer is circular
+    cptr_init(&tx_write_ptr, tx_buffer, AUDIO_TX_BUF_SIZE);
 
     // Initialize the i2s modules
     i2s_dma_config();
@@ -80,13 +58,14 @@ void audio_tx_init(void)
     tx_buffer_size = 0;
     tx_status = 0;
 
-    xTxBufferDeltaQueue = xQueueCreate(AUDIO_TX_DELTA_QUEUE_SIZE, sizeof(int));
+    TxBufferDeltaQueue = xQueueCreate(AUDIO_TX_DELTA_QUEUE_SIZE, sizeof(int));
 
     // Set UDB fifos to use half full flags.
-    byte_swap_tx_DP_F0_SET_LEVEL_MID;
-    byte_swap_tx_DP_F1_SET_LEVEL_MID;
     I2S_TX_AUX_CONTROL_REG |= FIFO_HALF_FULL_MASK;
 }
+
+float lsrc[98];
+float rsrc[98];
 
 // Send audio data to the byte swap component, which then gets sent to the transmit buffer.
 void AudioTx(void *source_buffer)
@@ -106,11 +85,27 @@ void AudioTx(void *source_buffer)
             }
             else
             {
-                // Start a dma transaction to send data to the byte swap component
-                configure_source_dma(source_buffer, source_buffer_size);
+                // Number of samples per channel in the packet.
+                int n_samples = source_buffer_size / 6;
+
+                // Unpack the usb data into floats.
+                unpack_usb_data_float(source_buffer, n_samples, lsrc, 0);
+                unpack_usb_data_float(source_buffer, n_samples, rsrc, 0);
+
+                float gain = get_knob(0);
+
+                volume(lsrc, lsrc, n_samples, gain);
+                volume(rsrc, rsrc, n_samples, gain);
+
+                // Process the data into the swap buffer
+                pack_i2s_data_float(swap_buf, n_samples, lsrc, 0);
+                pack_i2s_data_float(swap_buf, n_samples, rsrc, 1);
+
+                // Copy the swap buffer into the i2s transmit buffer.
+                cptr_copy_into(&tx_write_ptr, swap_buf, source_buffer_size);
 
                 // Inform the AudioTxMonitor task that bytes were added to the transmit buffer.
-                xQueueSend(xTxBufferDeltaQueue, &source_buffer_size, 0);
+                xQueueSend(TxBufferDeltaQueue, &source_buffer_size, 0);
             }
         }
     }
@@ -129,7 +124,7 @@ void AudioTxMonitor(void *pvParameters)
 
     for (ever)
     {
-        if (xQueueReceive(xTxBufferDeltaQueue, &buffer_delta_update, xMaxWait))
+        if (xQueueReceive(TxBufferDeltaQueue, &buffer_delta_update, xMaxWait))
         {
             tx_buffer_size += buffer_delta_update;
 
@@ -207,50 +202,9 @@ CY_ISR(i2s_tx_done_isr)
     BaseType_t xHigherPriorityTaskWoken = pdFALSE;
 
     // Inform the xAudioTxMonitor task that a transfer completed.
-    xQueueSendFromISR(xTxBufferDeltaQueue, &i2s_isr_delta, &xHigherPriorityTaskWoken);
+    xQueueSendFromISR(TxBufferDeltaQueue, &i2s_isr_delta, &xHigherPriorityTaskWoken);
 
     portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
-}
-
-static void bs_dma_config(void)
-{
-    // Send byte swapped data to the tx buffer.
-    // Init dma. Transferring 1 byte at a time from byte swap to sram.
-    uint8_t bs_dma_ch = DMA_BS_TX_DmaInitialize(1u, 1u, HI16(CYDEV_PERIPH_BASE), HI16(CYDEV_SRAM_BASE));
-    uint8_t bs_dma_td[AUDIO_TX_MAX_BS_TDS];
-
-    // Use the max transfer size for byte swap transfers. Allocate enough for the whole buffer.
-    for (int i = 0; i < AUDIO_TX_MAX_BS_TDS; i++)
-    {
-        bs_dma_td[i] = CyDmaTdAllocate();
-    }
-
-    // Use whole buffer.
-    int remaining = AUDIO_TX_BUF_SIZE;
-    // Increment the sram address when copying.
-    uint8_t td_config = TD_INC_DST_ADR;
-    // starting td
-    uint8_t *td = bs_dma_td;
-    // transfer dst.
-    const uint8_t *dst = tx_buffer;
-
-    // Infinite loop of chained tds. Use up to the max allowed td size.
-    while (remaining > 0)
-    {
-        int transfer_size = remaining > DMA_MAX_TRANSFER_SIZE ? DMA_MAX_TRANSFER_SIZE : remaining;
-        remaining -= transfer_size;
-        // Loop the last td to the first.
-        uint8_t next_td = remaining == 0 ? bs_dma_td[0] : td[1];
-
-        CyDmaTdSetConfiguration(*td, transfer_size, next_td, td_config);
-        CyDmaTdSetAddress(*td, LO16((uint32_t)byte_swap_tx_fifo_out_ptr), LO16((uint32_t)dst));
-
-        dst += transfer_size;
-        td++;
-    }
-
-    CyDmaChSetInitialTd(bs_dma_ch, bs_dma_td[0]);
-    CyDmaChEnable(bs_dma_ch, 1u);
 }
 
 // Chain n_tds number of transactions together in an infinite loop.
@@ -278,13 +232,4 @@ static void i2s_dma_config(void)
 
     CyDmaChSetInitialTd(i2s_dma_ch, i2s_dma_td[0]);
     CyDmaChEnable(i2s_dma_ch, 1u);
-}
-
-// Send data to the byte swap component in a single transfer.
-static void configure_source_dma(const uint8_t *src, int amount)
-{
-    CyDmaTdSetConfiguration(source_dma_td[0], amount, CY_DMA_DISABLE_TD, TD_INC_SRC_ADR);
-    CyDmaTdSetAddress(source_dma_td[0], LO16((uint32_t)src), LO16((uint32_t)byte_swap_tx_fifo_in_ptr));
-    CyDmaChSetInitialTd(source_dma_ch, source_dma_td[0]);
-    CyDmaChEnable(source_dma_ch, 1u);
 }

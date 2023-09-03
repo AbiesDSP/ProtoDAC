@@ -5,6 +5,7 @@
 #include "usb.h"
 #include "sync.h"
 #include "ear_saver.h"
+#include "knobs.h"
 #include "booter.h"
 
 #include "loggers.h"
@@ -42,6 +43,8 @@ int main(void)
     // Monitor for any error conditions that would cause unpleasant distortion, and automatically mute.
     xTaskCreate(EarSaver, "EarSaver", configMINIMAL_STACK_SIZE, NULL, EAR_SAVER_TASK_PRI, NULL);
 
+    xTaskCreate(KnobsUpdate, "Knobs", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+    
     // Bootload
     xTaskCreate(Booter, "Booter", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
 
@@ -72,6 +75,7 @@ void prvHardwareSetup(void)
     usb_audio_init();
     usb_serial_init();
     sync_init();
+    knobs_init();
 
     // Configure serial logger
     logger_init(&main_log, &usb_serial_log_handler, NULL, NULL, NULL);

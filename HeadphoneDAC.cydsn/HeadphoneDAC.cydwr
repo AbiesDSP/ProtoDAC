@@ -570,10 +570,14 @@
     </Group>
     <Group key="Pin">
       <Data key="9e662db4-c009-4747-b19d-d455dbb41836" value="sw" />
+      <Data key="33fec6b0-893f-4c64-9b86-ca49a3dfd1a0" value="knob_source" />
+      <Data key="046bc238-b7dd-4539-8325-38c557f0b21b" value="knob_1" />
       <Data key="0412e7a3-7bb2-4490-8a7d-0675b098c5ba" value="i2s_lrclk" />
       <Data key="475d3cbe-adf7-446a-af68-da51fff0bbf3" value="mute" />
+      <Data key="7819e7da-d629-4097-956f-6972eb9b5e08" value="knob_2" />
       <Data key="1425177d-0d0e-4468-8bcc-e638e5509a9b" value="ftdi_tx" />
       <Data key="15154388-ba2f-441c-b52e-4ba9eaca2532" value="i2s_sdo" />
+      <Data key="77715107-f8d5-47e5-a629-0fb83101ac6b" value="knob_0" />
       <Data key="c8e19693-67d9-4f29-a02f-cee5400c223a" value="i2s_sclk" />
       <Data key="c0065ef1-1b4a-4c27-bd7a-de833fd58b42/8b77a6c4-10a0-4390-971c-672353e2a49c" value="USBFS_Dm" />
       <Data key="c0065ef1-1b4a-4c27-bd7a-de833fd58b42/618a72fc-5ddd-4df5-958f-a3d55102db42" value="USBFS_Dp" />
@@ -3730,6 +3734,16 @@
         <Data key="Port Format" value="2,3" />
       </Group>
     </Group>
+    <Group key="33fec6b0-893f-4c64-9b86-ca49a3dfd1a0">
+      <Group key="0">
+        <Data key="Port Format" value="3,4" />
+      </Group>
+    </Group>
+    <Group key="046bc238-b7dd-4539-8325-38c557f0b21b">
+      <Group key="0">
+        <Data key="Port Format" value="3,6" />
+      </Group>
+    </Group>
     <Group key="0412e7a3-7bb2-4490-8a7d-0675b098c5ba">
       <Group key="0">
         <Data key="Port Format" value="2,5" />
@@ -3740,6 +3754,11 @@
         <Data key="Port Format" value="12,3" />
       </Group>
     </Group>
+    <Group key="7819e7da-d629-4097-956f-6972eb9b5e08">
+      <Group key="0">
+        <Data key="Port Format" value="3,7" />
+      </Group>
+    </Group>
     <Group key="1425177d-0d0e-4468-8bcc-e638e5509a9b">
       <Group key="0">
         <Data key="Port Format" value="12,4" />
@@ -3748,6 +3767,11 @@
     <Group key="15154388-ba2f-441c-b52e-4ba9eaca2532">
       <Group key="0">
         <Data key="Port Format" value="2,7" />
+      </Group>
+    </Group>
+    <Group key="77715107-f8d5-47e5-a629-0fb83101ac6b">
+      <Group key="0">
+        <Data key="Port Format" value="3,5" />
       </Group>
     </Group>
     <Group key="c8e19693-67d9-4f29-a02f-cee5400c223a">
