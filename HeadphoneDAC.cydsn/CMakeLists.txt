@@ -6,7 +6,7 @@ include_directories(${CMAKE_SOURCE_DIR}/FreeRTOS/Source/portable/MSVC-MingW)
 # Cast all the things
 add_compile_options("-Wall" "-Wno-int-to-pointer-cast" "-Wno-pointer-to-int-cast")
 
-add_library(list list2.c)
+add_library(avril avril.c)
 
 add_library(logging logger.c)
 add_library(stdout_handler stdout_handler.c)
@@ -24,7 +24,6 @@ add_library(usb usb.c)
 
 add_library(sync sync.c)
 
-add_library(serial serial_tx.c serial_rx.c serial_logger.c)
 add_library(audio_proc audio_proc.c)
 
 # add_library(filter filter.c)

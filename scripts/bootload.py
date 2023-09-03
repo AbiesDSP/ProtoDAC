@@ -1,7 +1,6 @@
 from pathlib import Path
 import subprocess
-from comm import find_headphone_dac, open_serial_port
-from command import Command
+from avril import Avril, find_headphone_dac
 import struct
 import time
 import sys
@@ -17,7 +16,7 @@ upgrade_file = (
 ATTEMPTS = 3
 WAIT_DELAY = 1
 
-ENTER_BOOTLOAD_ADDR = 16384
+ENTER_BOOTLOAD_ADDR = 16384 | 0x80000000
 BOOTLOADER_SECURITY_KEY = "0x424344454647"
 
 
@@ -25,10 +24,8 @@ def main():
     if "--build" in sys.argv:
         buildp.main()
     # Enter bootload command.
-    with open_serial_port() as dev:
-        cmd = Command(0, ENTER_BOOTLOAD_ADDR, b"")
-        dev.write(cmd.pack())
-        dev.flush()
+    with Avril() as av:
+        av.write(ENTER_BOOTLOAD_ADDR, b"\x00\x01\x02\x03")
         time.sleep(0.1)
 
     time.sleep(1.0)

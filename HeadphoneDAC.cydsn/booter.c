@@ -3,6 +3,22 @@
 
 static int enter_flag = 0;
 
+static int _booter_write(void *self, AvrilCommand *cmd)
+{
+    enter_flag = 1;
+    return 0;
+}
+
+static int _booter_read(void *self, AvrilCommand *cmd)
+{
+}
+
+AvrilInterface BooterIface = {
+    .write = _booter_write,
+    .read = _booter_read,
+    .size = 4,
+};
+
 void Booter(void *pvParameters)
 {
     (void)pvParameters;

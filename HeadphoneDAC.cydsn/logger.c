@@ -1,4 +1,6 @@
 #include "logger.h"
+#include "nsrtc.h"
+
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -29,7 +31,7 @@ int log_handler_init_funcs(LogHandler *handler, LogHandlerWrite write, LogHandle
 }
 
 /*  */
-const char *default_header_fmt_str = "[%s : %s] - ";
+const char *default_header_fmt_str = "[%s : %s : %d] - ";
 
 void logger_init(Logger *log, LogHandler *handler, LogHeaderFormat header_format, LogArgsFormat args_format, const char *header_fmt_str)
 {
@@ -79,7 +81,7 @@ void log_(const Logger *log, enum LogLevel level, const char *source_file, const
         // Format into the message buffer.
         // Format header
         // level, source_file, timestamp,
-        int message_size = log->header_format(message_buf, log->header_fmt_str, log_level2str(level), source_file);
+        int message_size = log->header_format(message_buf, log->header_fmt_str, log_level2str(level), source_file, nsrtc_get_time());
         // Format args
         message_size += log->args_format(message_buf + message_size, args_fmt, args);
 

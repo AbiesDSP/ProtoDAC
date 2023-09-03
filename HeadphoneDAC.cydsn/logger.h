@@ -1,5 +1,7 @@
 #pragma once
 #include "log_level.h"
+#include "nsrtc.h"
+#include <stdint.h>
 #include <stdarg.h>
 
 #define LOG_MAX_HANDLERS 4
@@ -53,7 +55,7 @@ struct _LogHeaderArgs
 {
     enum LogLevel level;
     const char *source_file;
-    // uint32_t timestamp
+    uint32_t timestamp;
 };
 
 void logger_init(Logger *log, LogHandler *handler, LogHeaderFormat header_format, LogArgsFormat args_format, const char *header_fmt_str);

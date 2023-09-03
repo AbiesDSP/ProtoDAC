@@ -168,6 +168,7 @@ void AudioTx(void *source_buffer)
 
                 // Copy the swap buffer into the i2s transmit buffer.
                 copy_into_with_dma(&tx_write_ptr, swap_buf, source_buffer_size);
+                // cptr_copy_into(&tx_write_ptr, swap_buf, source_buffer_size);
 
                 // Inform the AudioTxMonitor task that bytes were added to the transmit buffer.
                 xQueueSend(TxBufferDeltaQueue, &source_buffer_size, 0);
@@ -240,7 +241,7 @@ void AudioTxLogging(void *pvParameters)
     {
         vTaskDelay(xDelay);
         int buf_percent = (100 * audio_tx_size() / AUDIO_TX_BUF_SIZE);
-        log_info(&main_log, "Buf%%: %d, sts: %d    \n", buf_percent, tx_status);
+        log_info(&main_log, "Buf%%: %d\n", buf_percent);
     }
 }
 

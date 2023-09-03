@@ -1,5 +1,7 @@
-from comm import open_serial_port
 import argparse
+import time
+from datetime import datetime
+from avril import Avril
 
 
 class Args:
@@ -10,6 +12,23 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--delim", default="\n", type=str)
 
 
+def parse_msg(msg: str):
+    """Parse header and convert timestamp"""
+    try:
+        hstr, rest = msg.split("- ")
+        level, source_file, ts = (
+            hstr.replace("[", "").replace("]", "").strip().split(" : ")
+        )
+
+        t = datetime.fromtimestamp(float(ts))
+        tfmt = t.strftime("%H:%M:%S")
+
+        fmt_msg = f"[{level} : {source_file} : {tfmt}] - {rest}"
+    except:
+        fmt_msg = ""
+    return fmt_msg
+
+
 def main():
     """"""
     args = parser.parse_args(namespace=Args)
@@ -17,11 +36,11 @@ def main():
     if args.delim.startswith("\\"):
         args.delim = args.delim[1:]
 
-    with open_serial_port(timeout=0.05) as dev:
+    with Avril(timeout=0.05) as av:
         rx_data = bytearray()
         while True:
             # Read up to the max from the device. times out if fewer.
-            rx_bytes = dev.read(64)
+            rx_bytes = av.dev.read(64)
 
             # Append data to the buffer
             rx_data.extend(rx_bytes)
@@ -31,7 +50,9 @@ def main():
             # New, complete message.
             if len(spl) > 1:
                 rx_data = spl[1]
-                print(spl[0].decode(), end=args.delim)
+                msg = spl[0].decode()
+                fmt_msg = parse_msg(msg)
+                print(fmt_msg, end=args.delim)
 
 
 if __name__ == "__main__":

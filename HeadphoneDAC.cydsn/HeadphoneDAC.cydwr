@@ -82,7 +82,7 @@
         <Data key="derive_type" value="AUTO" />
         <Data key="desired_freq" value="1200000" />
         <Data key="desired_unit" value="0" />
-        <Data key="divider" value="31" />
+        <Data key="divider" value="61" />
         <Data key="domain" value="DIGITAL" />
         <Data key="enabled" value="True" />
         <Data key="minus_accuracy" value="0.001" />
@@ -105,7 +105,7 @@
         <Data key="derive_type" value="AUTO" />
         <Data key="desired_freq" value="12.288" />
         <Data key="desired_unit" value="6" />
-        <Data key="divider" value="3" />
+        <Data key="divider" value="6" />
         <Data key="domain" value="DIGITAL" />
         <Data key="enabled" value="True" />
         <Data key="minus_accuracy" value="0.001" />
@@ -200,7 +200,7 @@
         <Data key="derive_type" value="NAMED_FREQ" />
         <Data key="desired_freq" value="4.608" />
         <Data key="desired_unit" value="6" />
-        <Data key="divider" value="8" />
+        <Data key="divider" value="16" />
         <Data key="domain" value="DIGITAL" />
         <Data key="enabled" value="True" />
         <Data key="minus_accuracy" value="0.001" />
@@ -211,6 +211,30 @@
         <Data key="placement" value="AUTO" />
         <Data key="plus_accuracy" value="0.001" />
         <Data key="plus_tolerance" value="0.1" />
+        <Data key="scope" value="LOCAL" />
+        <Data key="src_clk_id" value="61737EF6-3B74-48f9-8B91-F7473A442AE7" />
+        <Data key="src_clk_name" value="MASTER_CLK" />
+        <Data key="start_on_reset" value="True" />
+        <Data key="sync_with_bus_clk" value="True" />
+        <Data key="user_set_domain" value="False" />
+      </Group>
+      <Group key="c0fb34bd-1044-4931-9788-16b01ce89812">
+        <Data key="check_tolerance" value="True" />
+        <Data key="clock_version" value="v1" />
+        <Data key="derive_type" value="NAMED_FREQ" />
+        <Data key="desired_freq" value="12.288" />
+        <Data key="desired_unit" value="6" />
+        <Data key="divider" value="6" />
+        <Data key="domain" value="DIGITAL" />
+        <Data key="enabled" value="True" />
+        <Data key="minus_accuracy" value="0.001" />
+        <Data key="minus_tolerance" value="5" />
+        <Data key="name" value="rtc_clock" />
+        <Data key="named_src_direct_connect" value="False" />
+        <Data key="netlist_name" value="rtc_clock" />
+        <Data key="placement" value="AUTO" />
+        <Data key="plus_accuracy" value="0.001" />
+        <Data key="plus_tolerance" value="5" />
         <Data key="scope" value="LOCAL" />
         <Data key="src_clk_id" value="61737EF6-3B74-48f9-8B91-F7473A442AE7" />
         <Data key="src_clk_name" value="MASTER_CLK" />
@@ -272,7 +296,7 @@
         <Data key="derive_type" value="NAMED_FREQ" />
         <Data key="desired_freq" value="18.432" />
         <Data key="desired_unit" value="6" />
-        <Data key="divider" value="2" />
+        <Data key="divider" value="4" />
         <Data key="domain" value="DIGITAL" />
         <Data key="enabled" value="True" />
         <Data key="minus_accuracy" value="0.001" />
@@ -344,7 +368,7 @@
         <Data key="check_tolerance" value="True" />
         <Data key="clock_version" value="v1" />
         <Data key="derive_type" value="BUILTIN" />
-        <Data key="desired_freq" value="36.864" />
+        <Data key="desired_freq" value="73.728" />
         <Data key="desired_unit" value="6" />
         <Data key="divider" value="0" />
         <Data key="domain" value="0" />
@@ -581,6 +605,7 @@
       <Data key="860fc56c-f370-4079-a703-13016bf9fa28" value="sof_sync_clk" />
       <Data key="898af135-0a67-4eec-a376-f817117ec099" value="sw_sts_clk" />
       <Data key="3700d4ea-40b4-414f-acb1-c0725a7ee8f9" value="i2s_sclk_clk" />
+      <Data key="c0fb34bd-1044-4931-9788-16b01ce89812" value="rtc_clock" />
       <Data key="c0065ef1-1b4a-4c27-bd7a-de833fd58b42/05cf1099-aac9-4226-a133-1bc328368208" value="USBFS_USB_BUS_CLOCK" />
       <Data key="c83f3d66-0b4a-4835-96d1-a3a3a67a9d15" value="byte_swap_clk" />
       <Data key="e7b967a5-8055-480c-8e67-ade950e48ced" value="i2s_mclk_clk" />

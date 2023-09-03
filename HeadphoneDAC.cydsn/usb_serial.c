@@ -5,8 +5,8 @@
 #include "usb_pvt.h"
 #include "cptr.h"
 
-#include "command.h"
 #include "booter.h"
+#include "avril.h"
 
 static TaskHandle_t SerialTxTask = NULL;
 static SemaphoreHandle_t tx_buf_lock = NULL;
@@ -98,12 +98,9 @@ void USBSerialRx(void *pvParameters)
         if (USBFS_GetEPState(USB_SERIAL_RX_EP))
         {
             int count = USBFS_GetEPCount(USB_SERIAL_RX_EP);
-
-            Command *cmd = (Command *)usb_serial_rx_ep_buf;
-            if (cmd->address == COMMAND_ENTER_BOOTLOAD_ADDR)
-            {
-                enter_bootload();
-            }
+            AvrilCommand *cmd = (AvrilCommand *)usb_serial_rx_ep_buf;
+            cmd->amount = count - 8;
+            avril_execute(cmd);
 
             USBFS_EnableOutEP(USB_SERIAL_RX_EP);
         }

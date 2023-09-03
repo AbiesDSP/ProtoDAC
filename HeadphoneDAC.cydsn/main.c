@@ -7,6 +7,7 @@
 #include "ear_saver.h"
 #include "knobs.h"
 #include "booter.h"
+#include "avril.h"
 
 #include "loggers.h"
 
@@ -44,9 +45,12 @@ int main(void)
     xTaskCreate(EarSaver, "EarSaver", configMINIMAL_STACK_SIZE, NULL, EAR_SAVER_TASK_PRI, NULL);
 
     xTaskCreate(KnobsUpdate, "Knobs", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
-    
+
     // Bootload
     xTaskCreate(Booter, "Booter", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+
+    // Not-So Real Time Clock.
+    xTaskCreate(NsrtcUpdate, "NSRTC", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
 
     // xTaskCreate(SomeLogger, "Some Logger", 512, NULL, 1, NULL);
 
@@ -71,11 +75,15 @@ void prvHardwareSetup(void)
     CyRamVectors[15] = (cyisraddress)xPortSysTickHandler;
 
     /* Start-up the peripherals. */
+    nsrtc_init();
     audio_tx_init();
     usb_audio_init();
     usb_serial_init();
     sync_init();
     knobs_init();
+    avril_init();
+    avril_register(256, &NSRTCIface, 4);
+    avril_register(16384, &BooterIface, 4);
 
     // Configure serial logger
     logger_init(&main_log, &usb_serial_log_handler, NULL, NULL, NULL);
