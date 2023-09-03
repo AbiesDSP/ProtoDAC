@@ -1,3 +1,6 @@
+"""
+Build and run the C/C++ tests.
+"""
 import argparse
 import subprocess
 from pathlib import Path

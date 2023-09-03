@@ -1,7 +1,12 @@
+"""
+Script to bootload the Headphone DAC with new firmware.
+This will send a command to the device to run "Bootloadable_Load()".
+Then, cyflash is used as the bootloader host tool.
+This will find the port based on the PID.
+"""
 from pathlib import Path
 import subprocess
 from avril import Avril, find_headphone_dac
-import struct
 import time
 import sys
 

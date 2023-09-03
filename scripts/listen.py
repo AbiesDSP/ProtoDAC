@@ -1,8 +1,12 @@
+"""
+The Headphone DAC will send log messages on USB serial port.
+This script opens the serial port, sets the device's timestamp with the PC time,
+then prints log messages.
+"""
 import argparse
 import time
 from datetime import datetime
 from avril import Avril
-import struct
 
 
 class Args:

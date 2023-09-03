@@ -1,3 +1,7 @@
+"""
+Scripts to build PSoC Creator projects from the command line interface.
+The project can be configured in "HeadphoneDAC.yaml"
+"""
 import os
 import re
 from pathlib import Path
