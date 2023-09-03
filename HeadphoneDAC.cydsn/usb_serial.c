@@ -35,7 +35,7 @@ int usb_serial_tx_buf_size(void)
 
 int usb_serial_write(const void *src, int amount)
 {
-    if (xSemaphoreTake(tx_buf_lock, pdMS_TO_TICKS(10)))
+    if (xSemaphoreTake(tx_buf_lock, pdMS_TO_TICKS(1)))
     {
         cptr_copy_into(&serial_tx_write_ptr, src, amount);
         serial_tx_buf_size += amount;

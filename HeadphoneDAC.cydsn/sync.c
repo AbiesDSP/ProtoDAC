@@ -78,7 +78,7 @@ void SyncMonitor(void *_AudioFbTask)
                 int sample_rate = 0.5 + (float)rolling_average / 16.384;
                 // Tx buffer status.
                 // int buf_percent = (100 * audio_tx_size() / AUDIO_TX_BUF_SIZE);
-                log_debug(&main_log, "SR: %d, fb: %d\n", sample_rate, rolling_average);
+                log_debug(&main_log, "SR: %d, fb: %d\n", sample_rate, (int)sfb);
                 locked = 1;
             }
             // Update usb once buffer is full.

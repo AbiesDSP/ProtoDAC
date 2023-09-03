@@ -8,16 +8,23 @@
 
 // Start up DMA channels, I2S, and ISRs.
 void audio_tx_init(void);
+
 // Get current size of the tx buffer.
 int audio_tx_size(void);
+
 // Audio tx status indicates if audio is off, active, or overflowed.
 uint8_t audio_tx_status(void);
 
+// Start and stop audio playback and I2S.
+void audio_tx_enable(void);
+void audio_tx_disable(void);
+
 /* Audio Tx Tasks. Free RTOS Tasks. */
 /*
-    AudioTx will write data to the byte swap component, which gets sent to the main i2s buffer.
+    AudioTx will receive data from usb, process it, then send to the i2s tx buffer or byte swap component.
     Notify the AudioTx with a task notification when data is available.
     xTaskNotifyFromISR(xAudioOutTask, audio_out_count, eSetValueWithOverwrite, &xHigherPriorityTaskWoken);
+    pass a pointer to the usb dma buffer.
 */
 void AudioTx(void *source_buffer);
 
@@ -32,6 +39,3 @@ void AudioTxMonitor(void *pvParameters);
 /* Low priority logging to monitor the buffer size. */
 void AudioTxLogging(void *pvParameters);
 
-// Start and stop audio playback and I2S.
-void audio_tx_enable(void);
-void audio_tx_disable(void);

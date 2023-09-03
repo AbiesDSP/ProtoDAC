@@ -8,6 +8,7 @@
 
 #include <I2S.h>
 #include <DMA_I2S_TX_dma.h>
+#include <DMA_Copy_dma.h>
 #include <i2s_tx_isr.h>
 
 #include <stdlib.h>
@@ -42,11 +43,23 @@ uint8_t audio_tx_status(void)
     return tx_status;
 }
 
+static uint8_t copy_dma_ch;
+static uint8_t copy_dma_tds[2];
+
 // Configure and start up all components for audio
 void audio_tx_init(void)
 {
     // i2s buffer is circular
     cptr_init(&tx_write_ptr, tx_buffer, AUDIO_TX_BUF_SIZE);
+    // Copy memory to memory.
+    copy_dma_ch = DMA_Copy_DmaInitialize(0, 1, HI16(CYDEV_SRAM_BASE), HI16(CYDEV_SRAM_BASE));
+    for (int i = 0; i < 2; i++)
+    {
+        copy_dma_tds[i] = CyDmaTdAllocate();
+    }
+    CyDmaChSetExtendedAddress(copy_dma_ch, HI16(CYDEV_SRAM_BASE), HI16(CYDEV_SRAM_BASE));
+    CyDmaChSetInitialTd(copy_dma_ch, copy_dma_tds[0]);
+    CyDmaChEnable(copy_dma_ch, 1);
 
     // Initialize the i2s modules
     i2s_dma_config();
@@ -62,6 +75,58 @@ void audio_tx_init(void)
 
     // Set UDB fifos to use half full flags.
     I2S_TX_AUX_CONTROL_REG |= FIFO_HALF_FULL_MASK;
+}
+
+/* Enabling I2S will start triggering the isr for AudioTxMonitor */
+void audio_tx_enable(void)
+{
+    tx_status |= AUDIO_OUT_STS_ACTIVE;
+    I2S_EnableTx();
+    MuteControl_Write(1);
+}
+
+/* Disabling I2S will stop triggering the isr for audiotxmonitor */
+void audio_tx_disable(void)
+{
+    tx_status &= ~AUDIO_OUT_STS_ACTIVE;
+    I2S_DisableTx();
+    MuteControl_Write(0);
+}
+
+void copy_into_with_dma(Cptr *write_ptr, const uint8_t *src, int amount)
+{
+    uint8_t *td = copy_dma_tds;
+    uint8_t config = TD_INC_DST_ADR | TD_INC_SRC_ADR;
+
+    int nrq = 0;
+    while (amount > 0)
+    {
+        // Number of bytes until the end of the memory in the circular buffer.
+        int remaining = write_ptr->end - write_ptr->ptr;
+
+        // Split in to two transfers if it would cross a memory boundary
+        int transfer_size = amount > remaining ? remaining : amount;
+        amount -= transfer_size;
+
+        uint8_t next_td = amount == 0 ? copy_dma_tds[0] : *(td + 1);
+        if (amount == 0)
+        {
+            config |= DMA_Copy__TD_TERMOUT_EN;
+        }
+
+        CyDmaTdSetConfiguration(*td, transfer_size, next_td, config);
+        CyDmaTdSetAddress(*td, LO16((uint32_t)src), LO16((uint32_t)write_ptr->ptr));
+
+        td++;
+        nrq++;
+        cptr_inc(write_ptr, transfer_size);
+        src += transfer_size;
+    }
+    // Generate 2 requests if chained, 1 otherwise.
+    for (int i = 0; i < nrq; i++)
+    {
+        CyDmaChSetRequest(copy_dma_ch, CY_DMA_CPU_REQ);
+    }
 }
 
 float lsrc[98];
@@ -90,7 +155,7 @@ void AudioTx(void *source_buffer)
 
                 // Unpack the usb data into floats.
                 unpack_usb_data_float(source_buffer, n_samples, lsrc, 0);
-                unpack_usb_data_float(source_buffer, n_samples, rsrc, 0);
+                unpack_usb_data_float(source_buffer, n_samples, rsrc, 1);
 
                 float gain = get_knob(0);
 
@@ -102,7 +167,7 @@ void AudioTx(void *source_buffer)
                 pack_i2s_data_float(swap_buf, n_samples, rsrc, 1);
 
                 // Copy the swap buffer into the i2s transmit buffer.
-                cptr_copy_into(&tx_write_ptr, swap_buf, source_buffer_size);
+                copy_into_with_dma(&tx_write_ptr, swap_buf, source_buffer_size);
 
                 // Inform the AudioTxMonitor task that bytes were added to the transmit buffer.
                 xQueueSend(TxBufferDeltaQueue, &source_buffer_size, 0);
@@ -124,6 +189,7 @@ void AudioTxMonitor(void *pvParameters)
 
     for (ever)
     {
+        // Receive updates on the buffer size changes from AudioTx or from the I2S Tx ISR.
         if (xQueueReceive(TxBufferDeltaQueue, &buffer_delta_update, xMaxWait))
         {
             tx_buffer_size += buffer_delta_update;
@@ -164,6 +230,7 @@ void AudioTxMonitor(void *pvParameters)
         }
     }
 }
+
 void AudioTxLogging(void *pvParameters)
 {
     (void)pvParameters;
@@ -173,24 +240,8 @@ void AudioTxLogging(void *pvParameters)
     {
         vTaskDelay(xDelay);
         int buf_percent = (100 * audio_tx_size() / AUDIO_TX_BUF_SIZE);
-        log_debug(&main_log, "Buf%%: %d, sts: %d    \n", buf_percent, tx_status);
+        log_info(&main_log, "Buf%%: %d, sts: %d    \n", buf_percent, tx_status);
     }
-}
-
-/* Enabling I2S will start triggering the isr for AudioTxMonitor */
-void audio_tx_enable(void)
-{
-    tx_status |= AUDIO_OUT_STS_ACTIVE;
-    I2S_EnableTx();
-    MuteControl_Write(1);
-}
-
-/* Disabling I2S will stop triggering the isr for audiotxmonitor */
-void audio_tx_disable(void)
-{
-    tx_status &= ~AUDIO_OUT_STS_ACTIVE;
-    I2S_DisableTx();
-    MuteControl_Write(0);
 }
 
 /* This isr is when each I2S dma transfer completes. This will happen

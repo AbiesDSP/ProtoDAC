@@ -17,15 +17,15 @@ def main():
     if args.delim.startswith("\\"):
         args.delim = args.delim[1:]
 
-    with open_serial_port() as ftdi:
-        expected_size = 14
+    with open_serial_port(timeout=0.05) as dev:
         rx_data = bytearray()
         while True:
+            # Read up to the max from the device. times out if fewer.
+            rx_bytes = dev.read(64)
+
             # Append data to the buffer
-            rx_bytes = ftdi.read(expected_size)
-            if len(rx_bytes) > 0:
-                expected_size = len(rx_bytes)
             rx_data.extend(rx_bytes)
+
             # Split at a delimeter.
             spl = rx_data.split(args.delim.encode(), 1)
             # New, complete message.
