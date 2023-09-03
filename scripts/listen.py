@@ -17,7 +17,7 @@ def main():
     if args.delim.startswith("\\"):
         args.delim = args.delim[1:]
 
-    with open_port("COM7") as ftdi:
+    with open_port("COM16") as ftdi:
         while True:
             x = ftdi.read(14)
             print(x)
