@@ -1,5 +1,4 @@
 #pragma once
-#include "list2.h"
 #include <stdint.h>
 
 typedef void (*FilterProcess)(const float *src, float *dst, int n);
@@ -11,7 +10,6 @@ typedef struct Filter
 
 typedef struct FilterChain
 {
-    List filters;
     float *proc_buf;
 } FilterChain;
 

@@ -15,8 +15,8 @@ typedef struct AvrilInterface AvrilInterface;
 
 // amount is in bytes.
 // Write data command.
-typedef int (*AvrilWrite)(void *, AvrilCommand *cmd);
-typedef int (*AvrilRead)(void *, AvrilCommand *cmd);
+typedef int (*AvrilWrite)(void *self, AvrilCommand *cmd);
+typedef int (*AvrilRead)(void *self, AvrilCommand *cmd);
 
 struct AvrilCommand
 {
@@ -40,8 +40,6 @@ struct Avril
 };
 
 void avril_init(void);
-void avril_register(uint32_t virtual_address, AvrilInterface *interface, int size);
+void avril_register(uint32_t virtual_address, AvrilInterface *iface, int size);
 
 int avril_execute(AvrilCommand *command);
-int avril_write(uint32_t address, const uint32_t *src, int amount);
-int avril_read(uint32_t address, uint32_t *dst, int amount);

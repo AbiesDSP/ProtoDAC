@@ -58,10 +58,10 @@ void avril_init(void)
     self.n_interfaces = 0;
 }
 
-void avril_register(uint32_t virtual_address, AvrilInterface *interface, int size)
+void avril_register(uint32_t virtual_address, AvrilInterface *iface, int size)
 {
     self.addresses[self.n_interfaces] = virtual_address;
-    self.interfaces[self.n_interfaces] = interface;
+    self.interfaces[self.n_interfaces] = iface;
     self.interfaces[self.n_interfaces]->size = size;
     self.n_interfaces++;
 }
@@ -87,11 +87,4 @@ int avril_execute(AvrilCommand *command)
     }
 
     return err;
-}
-
-int avril_write(uint32_t address, const uint32_t *src, int amount)
-{
-}
-int avril_read(uint32_t address, uint32_t *dst, int amount)
-{
 }

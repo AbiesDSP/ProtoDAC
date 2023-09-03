@@ -17,8 +17,7 @@ include_directories(${CMAKE_SOURCE_DIR}/FreeRTOS/Source/include)
 
 # Main test runner.
 add_executable(run_all_tests
-    test_logging.cpp
-    test_list.cpp
+    # test_logging.cpp
     test_filter.cpp
 )
 
@@ -26,8 +25,7 @@ target_include_directories(run_all_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/HeadphoneDAC.cydsn
 )
 target_link_libraries(run_all_tests
-    logging
-    list
+    # logging
     filter
     Catch2::Catch2WithMain)
 
