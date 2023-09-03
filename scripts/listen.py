@@ -1,4 +1,4 @@
-from ftdi import open_d2xx, open_port
+from comm import open_serial_port
 import argparse
 
 
@@ -17,25 +17,21 @@ def main():
     if args.delim.startswith("\\"):
         args.delim = args.delim[1:]
 
-    with open_port("COM16") as ftdi:
+    with open_serial_port() as ftdi:
+        expected_size = 14
+        rx_data = bytearray()
         while True:
-            x = ftdi.read(14)
-            print(x)
-        # expected_size = 14
-        # rx_data = bytearray()
-        # while True:
-        #     print(expected_size)
-        #     # Append data to the buffer
-        #     rx_bytes = ftdi.read(expected_size)
-        #     if len(rx_bytes) > 0:
-        #         expected_size = len(rx_bytes)
-        #     rx_data.extend(rx_bytes)
-        #     # Split at a delimeter.
-        #     spl = rx_data.split(args.delim.encode(), 1)
-        #     # New, complete message.
-        #     if len(spl) > 1:
-        #         rx_data = spl[1]
-        #         print(spl[0].decode(), end=args.delim)
+            # Append data to the buffer
+            rx_bytes = ftdi.read(expected_size)
+            if len(rx_bytes) > 0:
+                expected_size = len(rx_bytes)
+            rx_data.extend(rx_bytes)
+            # Split at a delimeter.
+            spl = rx_data.split(args.delim.encode(), 1)
+            # New, complete message.
+            if len(spl) > 1:
+                rx_data = spl[1]
+                print(spl[0].decode(), end=args.delim)
 
 
 if __name__ == "__main__":

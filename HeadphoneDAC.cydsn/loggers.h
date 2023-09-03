@@ -1,6 +1,7 @@
 // Globally available loggers in this application.
 #pragma once
 #include "logging.h"
-#include "serial_logger.h"
+// #include "serial_logger.h"
+#include "usb_serial_logger.h"
 
-extern Logger serial_log;
+extern Logger main_log;

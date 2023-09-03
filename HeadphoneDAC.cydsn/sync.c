@@ -1,6 +1,5 @@
-#include "sync.h"
 #include "project_config.h"
-
+#include "sync.h"
 #include "sync_counter.h"
 #include "sync_counter_isr.h"
 
@@ -9,9 +8,16 @@
 
 #include "loggers.h"
 
+#include "FreeRTOS.h"
+#include "task.h"
+#include "queue.h"
+#include "semphr.h"
+#include "portable.h"
+
 CY_ISR_PROTO(sync_counter_update_isr);
 
-static TaskHandle_t xSyncMonitor = NULL;
+static TaskHandle_t SyncMonitorTask = NULL;
+static TaskHandle_t AudioFbTask = NULL;
 
 void sync_init(void)
 {
@@ -25,7 +31,7 @@ static uint32_t rolling_average_buf[SYNC_N_WINDOWS];
 static uint32_t running_sum = 0;
 static int feedback_iter = 0;
 
-int update_rolling_average(uint32_t feedback, int32_t *average)
+int update_rolling_average(uint32_t feedback, uint32_t *average)
 {
     int update = 0;
     running_sum += (feedback - rolling_average_buf[feedback_iter]);
@@ -40,11 +46,10 @@ int update_rolling_average(uint32_t feedback, int32_t *average)
     return update;
 }
 
-void SyncMonitor(void *pvParameters)
+void SyncMonitor(void *_AudioFbTask)
 {
-    (void)pvParameters;
-
-    xSyncMonitor = xTaskGetCurrentTaskHandle();
+    AudioFbTask = _AudioFbTask;
+    SyncMonitorTask = xTaskGetCurrentTaskHandle();
 
     // isr arrives every 128ms. So if it times out, usb may have stopped.
     const TickType_t xMaxBlockTime = pdMS_TO_TICKS(SYNC_MAX_WAIT);
@@ -69,7 +74,7 @@ void SyncMonitor(void *pvParameters)
             uint32_t sfb = sync_counter_read();
 
             // Check if it's out of range?
-            int32_t rolling_average = 0;
+            uint32_t rolling_average = 0;
 
             // Filter the feeback with a rolling average.
             if (update_rolling_average(sfb, &rolling_average))
@@ -77,13 +82,13 @@ void SyncMonitor(void *pvParameters)
                 int sample_rate = 0.5 + (float)rolling_average / 16.384;
                 // Tx buffer status.
                 // int buf_percent = (100 * audio_tx_size() / AUDIO_TX_BUF_SIZE);
-                log_debug(&serial_log, "SR: %d, fb: %d\n", sample_rate, sfb);
+                log_debug(&main_log, "SR: %d, fb: %d\n", sample_rate, sfb);
                 locked = 1;
             }
             // Update usb once buffer is full.
             if (locked)
             {
-                usb_update_feedback(rolling_average);
+                xTaskNotify(AudioFbTask, rolling_average, eSetValueWithOverwrite);
             }
         }
         else
@@ -99,7 +104,7 @@ CY_ISR(sync_counter_update_isr)
     BaseType_t xHigherPriorityTaskWoken = pdFALSE;
 
     // New update from the sync_counter. This will increment the number of notifications.
-    vTaskNotifyGiveFromISR(xSyncMonitor, &xHigherPriorityTaskWoken);
+    vTaskNotifyGiveFromISR(SyncMonitorTask, &xHigherPriorityTaskWoken);
 
     portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
 }

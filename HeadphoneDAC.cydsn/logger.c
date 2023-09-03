@@ -31,12 +31,14 @@ int log_handler_init_funcs(LogHandler *handler, LogHandlerWrite write, LogHandle
 /*  */
 const char *default_header_fmt_str = "[%s : %s] - ";
 
-void logger_init(Logger *log, const LogHandler *handler, LogHeaderFormat header_format, LogArgsFormat args_format, const char *header_fmt_str)
+void logger_init(Logger *log, LogHandler *handler, LogHeaderFormat header_format, LogArgsFormat args_format, const char *header_fmt_str)
 {
-    list_init(&log->handlers);
+    log->n_handlers = 0;
+
     if (handler != NULL)
     {
-        list_append(&log->handlers, handler);
+        log->handlers[log->n_handlers] = handler;
+        log->n_handlers++;
     }
     if (header_format == NULL)
     {
@@ -54,9 +56,15 @@ void logger_init(Logger *log, const LogHandler *handler, LogHeaderFormat header_
     log->level = LOG_ERROR;
 }
 
-int logger_add_handler(Logger *log, const LogHandler *handler)
+int logger_add_handler(Logger *log, LogHandler *handler)
 {
-    return list_append(&log->handlers, handler);
+    if (log->n_handlers < LOG_MAX_HANDLERS)
+    {
+        log->handlers[log->n_handlers] = handler;
+        log->n_handlers++;
+        return 1;
+    }
+    return 0;
 }
 
 // Allocate a temporary block of memory for processing the message.
@@ -75,11 +83,9 @@ void log_(const Logger *log, enum LogLevel level, const char *source_file, const
         // Format args
         message_size += log->args_format(message_buf + message_size, args_fmt, args);
 
-        LogHandler *handler;
-        for (const ListNode *it = log->handlers.begin; it != NULL; it = it->next)
+        for (int i = 0; i < log->n_handlers; i++)
         {
-            handler = (LogHandler *)it->ref;
-            handler->write(handler, message_buf, message_size);
+            log->handlers[i]->write(log->handlers[i], message_buf, message_size);
         }
 
         va_end(args);

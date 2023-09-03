@@ -1,11 +1,9 @@
 #pragma once
-
 #include "FreeRTOS.h"
 #include "task.h"
 #include "queue.h"
 #include "semphr.h"
 #include "portable.h"
-
 #include "log_level.h"
 
 // Enable processing data before transmitting.
@@ -20,8 +18,8 @@
 #define LOG_MIN_STACK_SIZE 512
 
 // Task priorities
-#define AUDIO_TX_TASK_PRI 5
-#define AUDIO_TX_MONITOR_TASK_PRI 4
+#define AUDIO_OUT_TASK_PRI 5
+#define AUDIO_OUT_MONITOR_TASK_PRI 4
 #define USB_TASK_PRI 3
 #define SYNC_TASK_PRI 2
 #define SERIAL_TASK_PRI 2
@@ -31,11 +29,11 @@
 // Initial sample rate
 #define AUDIO_SAMPLE_RATE 48000
 
-// More than enough for 96kHz
-#define USB_MAX_BUF_SIZE 1024
+// Enough for 96kHz
+#define USB_AUDIO_EP_BUF_SIZE 588
 #define USB_CONFIG_SERVICE_MAX_WAIT 100
 #define USB_FEEDBACK_MAX_WAIT 60
-#define USB_SERIAL_BUF_SIZE 64
+#define USB_SERIAL_EP_BUF_SIZE 64
 
 // USB Interface Configuration
 #define USBFS_DEVICE 0
@@ -51,17 +49,22 @@
 #define USB_AUDIO_OUT_ALT_STREAM 1
 
 #define USB_AUDIO_FB_EP 3
-//#define USB_AUDIO_IN_EP 2
+// #define USB_AUDIO_IN_EP 2
 
 #define USB_AUDIO_HID_IFACE 2
 #define USB_AUDIO_HID_EP 4
 
+//
+// USB Serial Port
+//
 #define USB_SERIAL_CTL_IFACE 3
 #define SERIAL_CTL_EP 6
 
 #define USB_SERIAL_DATA_IFACE 4
 #define USB_SERIAL_TX_EP 7
 #define USB_SERIAL_RX_EP 8
+
+#define USB_SERIAL_TX_BUF_SIZE 1024
 
 // USB Synchronization
 #define SYNC_WINDOW_SIZE 128
@@ -71,7 +74,7 @@
 #define SYNC_MAX_WAIT 60
 
 // Audio transmit buffer
-#define AUDIO_TX_TRANSFER_SIZE 1152
+#define AUDIO_TX_TRANSFER_SIZE 588
 #define AUDIO_TX_N_TDS 16
 #define AUDIO_TX_BUF_SIZE (AUDIO_TX_TRANSFER_SIZE * AUDIO_TX_N_TDS)
 // Turn on audio when it's half full
@@ -90,17 +93,6 @@
 // Ear Saver Config
 #define EAR_SAVER_STARTUP_DELAY 100
 #define EAR_SAVER_RESET_INTERVAL 2
-
-// Serial port
-#define SERIAL_TX_BUFFER_SIZE 2048
-#define SERIAL_RX_BUFFER_SIZE 1024
-#define SERIAL_MSG_BUF_SIZE 1024
-
-#define SERIAL_TX_MAX_TDS 4
-#define SERIAL_TX_MAX_TRANSFER_SIZE 4095
-
-#define SERIAL_RX_MAX_TRANSFER_SIZE 4095
-#define SERIAL_RX_MAX_TDS 4
 
 // Logging
 #define GLOBAL_LOG_LEVEL LOG_DEBUG

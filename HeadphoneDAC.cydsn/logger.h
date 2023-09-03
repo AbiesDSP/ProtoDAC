@@ -1,7 +1,8 @@
 #pragma once
 #include "log_level.h"
-#include "list2.h"
 #include <stdarg.h>
+
+#define LOG_MAX_HANDLERS 4
 
 typedef struct Logger Logger;
 typedef struct LogHandler LogHandler;
@@ -37,7 +38,8 @@ typedef int (*LogArgsFormat)(char *dst, const char *args_fmt, va_list args);
  */
 struct Logger
 {
-    List handlers;
+    LogHandler *handlers[LOG_MAX_HANDLERS];
+    int n_handlers;
     enum LogLevel level;
 
     LogHeaderFormat header_format;
@@ -54,8 +56,8 @@ struct _LogHeaderArgs
     // uint32_t timestamp
 };
 
-void logger_init(Logger *log, const LogHandler *handler, LogHeaderFormat header_format, LogArgsFormat args_format, const char *header_fmt_str);
-int logger_add_handler(Logger *log, const LogHandler *handler);
+void logger_init(Logger *log, LogHandler *handler, LogHeaderFormat header_format, LogArgsFormat args_format, const char *header_fmt_str);
+int logger_add_handler(Logger *log, LogHandler *handler);
 
 /* Generic log function. Don't call this directly.
  * The log macros will populate these fields with the needed information.

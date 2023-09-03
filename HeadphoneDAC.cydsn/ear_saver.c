@@ -1,6 +1,16 @@
-#include "ear_saver.h"
 #include "project_config.h"
+#include "ear_saver.h"
 #include "project.h"
+
+void ear_saver_mute(void)
+{
+    MuteControl_Write(0);
+}
+
+void ear_saver_unmute(void)
+{
+    MuteControl_Write(1);
+}
 
 void EarSaver(void *pvParameters)
 {

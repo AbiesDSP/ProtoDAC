@@ -5,14 +5,12 @@
 #include "usb.h"
 #include "sync.h"
 #include "ear_saver.h"
-
-#include "serial.h"
+#include "booter.h"
 
 #include "loggers.h"
 
 static void prvHardwareSetup(void);
 void SomeLogger(void *pvParameters);
-void Booter(void *pvParameters);
 
 int main(void)
 {
@@ -23,30 +21,31 @@ int main(void)
     prvHardwareSetup();
 
     // Audio Transmit Tasks.
-    TaskHandle_t xAudioTxTask = NULL;
-    xTaskCreate(AudioTxMonitor, "Audio Tx Monitor", LOG_MIN_STACK_SIZE, NULL, AUDIO_TX_MONITOR_TASK_PRI, NULL);
-    xTaskCreate(AudioTx, "Audio Tx", 1024, (void *)usb_audio_out_buf, AUDIO_TX_TASK_PRI, &xAudioTxTask);
+    TaskHandle_t AudioTxTask = NULL;
+    xTaskCreate(AudioTxMonitor, "Audio Tx Monitor", LOG_MIN_STACK_SIZE, NULL, AUDIO_OUT_MONITOR_TASK_PRI, NULL);
+    xTaskCreate(AudioTx, "Audio Tx", 1024, usb_get_audio_out_ep_buf(), AUDIO_OUT_TASK_PRI, &AudioTxTask);
     xTaskCreate(AudioTxLogging, "Audio Tx Logging", LOG_MIN_STACK_SIZE, NULL, LOG_TASK_PRI, NULL);
 
     // USB Tasks
-    usb_set_audio_output_task(xAudioTxTask);
+    usb_set_audio_output_task(AudioTxTask);
     xTaskCreate(USBConfigService, "USB Service Config", configMINIMAL_STACK_SIZE, NULL, USB_TASK_PRI, NULL);
-    xTaskCreate(USBServiceAudioFeedbackEp, "USB Feedback", configMINIMAL_STACK_SIZE, NULL, USB_TASK_PRI, NULL);
+    TaskHandle_t USBFbTask = NULL;
+    xTaskCreate(USBServiceAudioFeedbackEp, "USB Feedback", configMINIMAL_STACK_SIZE, NULL, USB_TASK_PRI, &USBFbTask);
+
+    // USB Serial Port
+    xTaskCreate(USBSerialTx, "USB Serial Tx", configMINIMAL_STACK_SIZE, NULL, SERIAL_TASK_PRI, NULL);
+    xTaskCreate(USBSerialRx, "USB Serial Rx", configMINIMAL_STACK_SIZE, NULL, SERIAL_TASK_PRI, NULL);
 
     // USB Synchronization Monitor
-    xTaskCreate(SyncMonitor, "Sync Monitor", LOG_MIN_STACK_SIZE, NULL, SYNC_TASK_PRI, NULL);
-
-    // Serial Port
-    xTaskCreate(SerialSender, "Serial Sender", configMINIMAL_STACK_SIZE, NULL, SERIAL_TASK_PRI, NULL);
-    xTaskCreate(SerialReceiver, "Serial Receiver", configMINIMAL_STACK_SIZE, NULL, SERIAL_TASK_PRI, NULL);
+    xTaskCreate(SyncMonitor, "Sync Monitor", LOG_MIN_STACK_SIZE, USBFbTask, SYNC_TASK_PRI, NULL);
 
     // Monitor for any error conditions that would cause unpleasant distortion, and automatically mute.
     xTaskCreate(EarSaver, "EarSaver", configMINIMAL_STACK_SIZE, NULL, EAR_SAVER_TASK_PRI, NULL);
 
     // Bootload
     xTaskCreate(Booter, "Booter", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
-    
-    //    xTaskCreate(SomeLogger, "Some Logger", 512, NULL, 1, NULL);
+
+    // xTaskCreate(SomeLogger, "Some Logger", 512, NULL, 1, NULL);
 
     vTaskStartScheduler();
 
@@ -70,65 +69,26 @@ void prvHardwareSetup(void)
 
     /* Start-up the peripherals. */
     audio_tx_init();
-    usb_init();
+    usb_audio_init();
+    usb_serial_init();
     sync_init();
-    serial_tx_init();
-    serial_rx_init();
 
     // Configure serial logger
-    logger_init(&serial_log, &serial_log_handler, NULL, NULL, NULL);
-    serial_log.level = GLOBAL_LOG_LEVEL;
-}
+    logger_init(&main_log, &usb_serial_log_handler, NULL, NULL, NULL);
 
-void Booter(void *pvParameters)
-{
-    (void)pvParameters;
-    
-    // Boot button must be held this long to trigger bootloading.
-    const TickType_t xHoldDelay = pdMS_TO_TICKS(BOOTER_HOLD_WAIT);
-    
-    // Check the state of the button this often.
-    const TickType_t xRefreshDelay = pdMS_TO_TICKS(BOOTER_REFRESH_WAIT);
-    
-    // If the boot switch is held on startup, start the bootloader.
-    if ((SwitchStatus_Read() & SW_BOOT) == 0)
-    {
-        #ifdef CY_BOOTLOADABLE_Bootloadable_H
-            Bootloadable_Load();
-        #endif
-    }
-    
-    TickType_t xLastTime = xTaskGetTickCount();
-    
-    for (ever)
-    {
-        vTaskDelayUntil(&xLastTime, xRefreshDelay);
-        // Boot switch is held down.
-        if (!(SwitchStatus_Read() & SW_BOOT))
-        {
-            // Check if it's held down for xHoldDelay.
-            vTaskDelayUntil(&xLastTime, xHoldDelay);
-            if (!(SwitchStatus_Read() & SW_BOOT))
-            {
-                // Start the bootloader.
-                #ifdef CY_BOOTLOADABLE_Bootloadable_H
-                    Bootloadable_Load();
-                #endif
-            }
-        }
-    }
+    main_log.level = GLOBAL_LOG_LEVEL;
 }
 
 void SomeLogger(void *pvParameters)
 {
     (void)pvParameters;
 
-    const TickType_t log_interval = pdMS_TO_TICKS(1000);
+    const TickType_t log_interval = pdMS_TO_TICKS(500);
 
     for (ever)
     {
         vTaskDelay(log_interval);
-        log_debug(&serial_log, "Hello, World!\n");
+        log_debug(&main_log, "Hello, World!\n");
     }
 }
 

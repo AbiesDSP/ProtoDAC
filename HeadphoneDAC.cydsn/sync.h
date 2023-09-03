@@ -5,4 +5,4 @@
  *
  */
 void sync_init(void);
-void SyncMonitor(void *pvParameters);
+void SyncMonitor(void *AudioFBTask);

@@ -1,8 +1,7 @@
-#include "audio_tx.h"
-#include "loggers.h"
 #include "project_config.h"
 
-#include "serial.h"
+#include "audio_tx.h"
+#include "loggers.h"
 
 #include <I2S.h>
 
@@ -14,6 +13,8 @@
 #include <DMA_I2S_TX_dma.h>
 
 #include <i2s_tx_isr.h>
+
+// #include "FreeRTOS.h"
 
 #include <stdlib.h>
 
@@ -101,7 +102,7 @@ void AudioTx(void *source_buffer)
             // If we're in an overflow state and above half full, drop any incoming data.
             if (tx_status & AUDIO_OUT_STS_OVERFLOW)
             {
-                log_error(&serial_log, "Overflowed! Dropping Data!\n");
+                log_error(&main_log, "Overflowed! Dropping Data!\n");
             }
             else
             {
@@ -137,7 +138,7 @@ void AudioTxMonitor(void *pvParameters)
             if ((tx_status & AUDIO_OUT_STS_ACTIVE) && tx_buffer_size <= AUDIO_TX_UNDERFLOW_LIMIT)
             {
                 audio_tx_disable();
-                log_warn(&serial_log, "Audio Out Underflow, Disabling Output!\n");
+                log_warn(&main_log, "Audio Out Underflow, Disabling Output!\n");
             }
 
             // Clear the overflow condition.
@@ -146,7 +147,7 @@ void AudioTxMonitor(void *pvParameters)
                 if (tx_buffer_size <= AUDIO_TX_ACTIVE_LIMIT)
                 {
                     tx_status &= ~AUDIO_OUT_STS_OVERFLOW;
-                    log_info(&serial_log, "Clearing Overflow\n");
+                    log_info(&main_log, "Clearing Overflow\n");
                 }
             }
 
@@ -154,7 +155,7 @@ void AudioTxMonitor(void *pvParameters)
             else if (tx_buffer_size >= AUDIO_TX_OVERFLOW_LIMIT)
             {
                 tx_status |= AUDIO_OUT_STS_OVERFLOW;
-                log_warn(&serial_log, "Audio Out Overflow!\n");
+                log_warn(&main_log, "Audio Out Overflow!\n");
             }
         }
         else
@@ -163,7 +164,7 @@ void AudioTxMonitor(void *pvParameters)
             if (!(tx_status & AUDIO_OUT_STS_ACTIVE) && tx_buffer_size >= AUDIO_TX_ACTIVE_LIMIT)
             {
                 audio_tx_enable();
-                log_info(&serial_log, "Enabling Audio Output.\n");
+                log_info(&main_log, "Enabling Audio Output.\n");
             }
         }
     }
@@ -177,7 +178,7 @@ void AudioTxLogging(void *pvParameters)
     {
         vTaskDelay(xDelay);
         int buf_percent = (100 * audio_tx_size() / AUDIO_TX_BUF_SIZE);
-        log_debug(&serial_log, "Buf%%: %d, sts: %d    \n", buf_percent, tx_status);
+        log_debug(&main_log, "Buf%%: %d, sts: %d    \n", buf_percent, tx_status);
     }
 }
 
