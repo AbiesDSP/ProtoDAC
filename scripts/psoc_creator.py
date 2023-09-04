@@ -22,15 +22,18 @@ def version_from_file(version_file: Path) -> str:
     patch = int(re.findall(r"VERSION_PATCH\s*(\d+)", alldata)[0])
     dev = int(re.findall(r"VERSION_DEV\s*(\d+)", alldata)[0])
 
-    return f"{major}.{minor}.{patch}.{dev}"
+    return f"{major}.{minor}.{patch}"
 
 
 @dataclass
 class PSoCConfig(YAMLWizard):
     workspace: str
-    projects: list[str]
+    project: str
     version: str
     build_type: str
+    upgrade_file: str
+    release_files: list[str]
+    registers: dict[str, int]
 
     psoc_creator_location: str = "C:/Program Files (x86)/Cypress/PSoC Creator"
     psoc_creator_version: str = "4.4"
@@ -46,22 +49,21 @@ class PSoCConfig(YAMLWizard):
     def clean(self):
         """Deletes all generated sources, cyfit file, and runs Clean in PSoC Creator for all projects in the workspace."""
 
-        for prj in self.projects:
-            prj_root = Path(prj)
-            # Delete all of generated source and cyfit file.
-            generated_source_dir = prj_root / "Generated_Source"
-            cyfit = prj_root / f"{prj_root.stem}.cyfit"
+        prj_root = Path(f"{self.project}.cydsn")
+        # Delete all of generated source and cyfit file.
+        generated_source_dir = prj_root / "Generated_Source"
+        cyfit = prj_root / f"{prj_root.stem}.cyfit"
 
-            print(f"Deleting {generated_source_dir}")
-            shutil.rmtree(generated_source_dir, ignore_errors=True)
+        print(f"Deleting {generated_source_dir}")
+        shutil.rmtree(generated_source_dir, ignore_errors=True)
 
-            build_dir = prj_root / self.sub_path
-            print(f"Deleting {build_dir}")
-            shutil.rmtree(build_dir, ignore_errors=True)
+        build_dir = prj_root / self.sub_path
+        print(f"Deleting {build_dir}")
+        shutil.rmtree(build_dir, ignore_errors=True)
 
-            if cyfit.exists():
-                print(f"Deleting {cyfit}")
-                os.remove(cyfit)
+        if cyfit.exists():
+            print(f"Deleting {cyfit}")
+            os.remove(cyfit)
 
         # Run the psoc clean command.
         cmd = [
@@ -76,19 +78,18 @@ class PSoCConfig(YAMLWizard):
         subprocess.run(cmd, check=True)
 
     def build(self):
-        """Build all projects in the workspace"""
-        for prj in self.projects:
-            cmd = [
-                self.cyprjmgr_bin(),
-                "-wrk",
-                self.workspace,
-                "-build",
-                "-prj",
-                Path(prj).stem,
-                "-c",
-                self.build_type,
-            ]
-            subprocess.run(cmd, check=True)
+        """Build project."""
+        cmd = [
+            self.cyprjmgr_bin(),
+            "-wrk",
+            self.workspace,
+            "-build",
+            "-prj",
+            Path(f"{self.project}.cydsn").stem,
+            "-c",
+            self.build_type,
+        ]
+        subprocess.run(cmd, check=True)
 
     def cyprjmgr_bin(self):
         """Path to cyprjmgr cli tool."""
@@ -100,5 +101,5 @@ class PSoCConfig(YAMLWizard):
 
 
 if __name__ == "__main__":
-    cfg = PSoCConfig.from_yaml_file("main_config.yaml")
+    cfg = PSoCConfig.from_yaml_file("ProjectConfig.yaml")
     print(cfg)

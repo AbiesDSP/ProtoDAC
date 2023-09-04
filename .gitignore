@@ -3,6 +3,7 @@ venv
 .vscode
 __pycache__
 archive
+release
 
 # PSoC Ignored Files
 # Ignore all but TopDesign, project file, design wide resources, main.c, and cyapicallbacks.h
