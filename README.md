@@ -1,7 +1,12 @@
-# USB Headphone DAC
+# USB Prototype DAC
 
 Uses a PSoC 5LP microcontroller as a USB to I2S bridge.
-Asynchronous USB Synchronization.
+
+- USB Audio with Asynchronous feedback Synchronization
+- Underflow/Overflow detection
+- "EarSaver" muting if the device resets
+- FreeRTOS kernel
+- USB Serial Port for configuration.
 
 # Installation and Building
 
@@ -28,7 +33,7 @@ Update the firmware from a release
 
 ```bash
 # unzip release
-cd release_dir/HeadphoneDAC_vx.x.x.x
+cd release_dir/ProtoDAC.x.x.x
 python bootload.py
 ```
 
@@ -38,8 +43,6 @@ Build the project and update the device's firmware
 python ./scripts/buildp.py
 python ./scripts/bootload.py --dev
 ```
-
-
 
 ### View Log messages
 ```bash
