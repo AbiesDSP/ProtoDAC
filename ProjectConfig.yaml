@@ -1,12 +1,12 @@
-workspace: HeadphoneDAC.cywrk
-project: HeadphoneDAC
-version: HeadphoneDAC.cydsn/version.h
+workspace: ProtoDAC.cywrk
+project: ProtoDAC
+version: ProtoDAC.cydsn/version.h
 build_type: Release
 psoc_creator_version: 4.4
-upgrade_file: HeadphoneDAC.cydsn/CortexM3/ARM_GCC_541/Release/HeadphoneDAC.cyacd
+upgrade_file: ProtoDAC.cydsn/CortexM3/ARM_GCC_541/Release/ProtoDAC.cyacd
 release_files:
-  - HeadphoneDAC.cydsn/CortexM3/ARM_GCC_541/Release/HeadphoneDAC.cyacd
-  - HeadphoneDAC.cydsn/CortexM3/ARM_GCC_541/Release/HeadphoneDAC.hex
+  - ProtoDAC.cydsn/CortexM3/ARM_GCC_541/Release/ProtoDAC.cyacd
+  - ProtoDAC.cydsn/CortexM3/ARM_GCC_541/Release/ProtoDAC.hex
   - ProjectConfig.yaml
   - scripts/psoc_creator.py
   - scripts/avril.py

@@ -18,6 +18,9 @@ release
 !*.cydsn/TopDesign/
 !*.cydsn/TopDesign/*.cysch
 !*.cydsn/CMakeLists.txt
+!*.cydsn/byte_swap*
+!*.cydsn/flush*
+!*.cydsn/sync_counter*
 *.LOG
 *.cycdx
 *.cyfit

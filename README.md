@@ -1,6 +1,7 @@
 # USB Headphone DAC
 
 Uses a PSoC 5LP microcontroller as a USB to I2S bridge.
+Asynchronous USB Synchronization.
 
 # Installation and Building
 
@@ -10,8 +11,8 @@ If there are any errors building, you may need to "update components" in the pso
 
 Clone and build the project
 ```bash
-git clone https://github.com/AbiesDSP/HeadphoneDAC.git
-cd HeadphoneDAC
+git clone https://github.com/AbiesDSP/ProtoDAC.git
+cd ProtoDAC
 ```
 
 Install the requirements (Optionally create a virtual environment first)

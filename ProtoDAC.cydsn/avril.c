@@ -69,7 +69,7 @@ void avril_register(uint32_t virtual_address, AvrilInterface *iface, int size)
 int avril_execute(AvrilCommand *command)
 {
     uint32_t virtual_base_address = 0;
-    AvrilInterface *iface;
+    AvrilInterface *iface = 0;
 
     int err = locate_interface(command->address & ~AVRIL_WRITE_EN, &virtual_base_address, &iface);
     if (err == 0)

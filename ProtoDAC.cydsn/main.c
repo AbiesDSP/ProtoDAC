@@ -21,12 +21,18 @@ int main(void)
     CyGlobalIntEnable;
 #endif
 
+    CyDelay(1);
+    if (0 == (SwitchStatus_Read() & SW_BOOT))
+    {
+        Bootloadable_Load();
+    }
+
     prvHardwareSetup();
 
     // Audio Transmit Tasks.
     TaskHandle_t AudioTxTask = NULL;
     xTaskCreate(AudioTxMonitor, "Audio Tx Monitor", LOG_MIN_STACK_SIZE, NULL, AUDIO_OUT_MONITOR_TASK_PRI, NULL);
-    xTaskCreate(AudioTx, "Audio Tx", 1024, usb_get_audio_out_ep_buf(), AUDIO_OUT_TASK_PRI, &AudioTxTask);
+    xTaskCreate(AudioTx, "Audio Tx", LOG_MIN_STACK_SIZE, usb_get_audio_out_ep_buf(), AUDIO_OUT_TASK_PRI, &AudioTxTask);
     xTaskCreate(AudioTxLogging, "Audio Tx Logging", LOG_MIN_STACK_SIZE, NULL, LOG_TASK_PRI, NULL);
 
     // USB Tasks
@@ -39,18 +45,19 @@ int main(void)
     xTaskCreate(USBSerialTx, "USB Serial Tx", configMINIMAL_STACK_SIZE, NULL, SERIAL_TASK_PRI, NULL);
     xTaskCreate(USBSerialRx, "USB Serial Rx", configMINIMAL_STACK_SIZE, NULL, SERIAL_TASK_PRI, NULL);
 
-    // USB Synchronization Monitor
+    // USB Synchronization Monitor. Updates USB with new updates on the sample rate.
     xTaskCreate(SyncMonitor, "Sync Monitor", LOG_MIN_STACK_SIZE, USBFbTask, SYNC_TASK_PRI, NULL);
 
     // Monitor for any error conditions that would cause unpleasant distortion, and automatically mute.
     xTaskCreate(EarSaver, "EarSaver", configMINIMAL_STACK_SIZE, NULL, EAR_SAVER_TASK_PRI, NULL);
 
+    // Update the current state of the knobs.
     xTaskCreate(KnobsUpdate, "Knobs", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
 
     // Bootload
     xTaskCreate(Booter, "Booter", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
 
-    // Not-So Real Time Clock.
+    // Real Time Clock. 1pps updates
     xTaskCreate(RTCUpdate, "RTC", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
 
     // xTaskCreate(SomeLogger, "Some Logger", 512, NULL, 1, NULL);
