@@ -74,7 +74,7 @@
 #define SYNC_MAX_WAIT 60
 
 // Audio transmit buffer
-#define AUDIO_TX_TRANSFER_SIZE 577
+#define AUDIO_TX_TRANSFER_SIZE 588
 #define AUDIO_TX_N_TDS 32
 #define AUDIO_TX_BUF_SIZE (AUDIO_TX_TRANSFER_SIZE * AUDIO_TX_N_TDS)
 // Turn on audio when it's half full
@@ -95,7 +95,7 @@
 #define EAR_SAVER_RESET_INTERVAL 2
 
 // Logging
-#define GLOBAL_LOG_LEVEL LOG_INFO
+#define GLOBAL_LOG_LEVEL LOG_WARN
 #define LOG_MESSAGE_BUF_SIZE 256
 
 //
