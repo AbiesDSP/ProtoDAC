@@ -29,6 +29,7 @@ def version_from_file(version_file: Path) -> str:
 class PSoCConfig(YAMLWizard):
     workspace: str
     project: str
+    bootloader: str
     version: str
     build_type: str
     upgrade_file: str
@@ -54,18 +55,29 @@ class PSoCConfig(YAMLWizard):
         generated_source_dir = prj_root / "Generated_Source"
         cyfit = prj_root / f"{prj_root.stem}.cyfit"
 
-        print(f"Deleting {generated_source_dir}")
+        print(f"Deleting {generated_source_dir}...")
         shutil.rmtree(generated_source_dir, ignore_errors=True)
 
         build_dir = prj_root / self.sub_path
-        print(f"Deleting {build_dir}")
+        print(f"Deleting {build_dir}...")
         shutil.rmtree(build_dir, ignore_errors=True)
 
         if cyfit.exists():
-            print(f"Deleting {cyfit}")
+            print(f"Deleting {cyfit}...")
             os.remove(cyfit)
 
         # Run the psoc clean command.
+        print(f"Cleaning {self.bootloader}...")
+        cmd = [
+            self.cyprjmgr_bin(),
+            "-wrk",
+            self.workspace,
+            "-clean",
+            "-prj",
+            f"{self.bootloader}",
+        ]
+        print(f"Cleaning {self.project}...")
+        subprocess.run(cmd, check=True)
         cmd = [
             self.cyprjmgr_bin(),
             "-wrk",
@@ -74,11 +86,23 @@ class PSoCConfig(YAMLWizard):
             "-prj",
             prj_root.stem,
         ]
-        print(f"Cleaning Workspace {self.workspace}")
         subprocess.run(cmd, check=True)
 
     def build(self):
         """Build project."""
+        print(f"Building {self.bootloader}...")
+        cmd = [
+            self.cyprjmgr_bin(),
+            "-wrk",
+            self.workspace,
+            "-build",
+            "-prj",
+            Path(f"{self.bootloader}.cydsn").stem,
+            "-c",
+            self.build_type,
+        ]
+        subprocess.run(cmd, check=True)
+        print(f"Building {self.project}...")
         cmd = [
             self.cyprjmgr_bin(),
             "-wrk",

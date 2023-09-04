@@ -1,5 +1,6 @@
 workspace: ProtoDAC.cywrk
 project: ProtoDAC
+bootloader: Bootloader
 version: ProtoDAC.cydsn/version.h
 build_type: Release
 psoc_creator_version: 4.4
