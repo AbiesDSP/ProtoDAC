@@ -10,7 +10,7 @@ Uses a PSoC 5LP microcontroller as a USB to I2S bridge.
 
 # Installation and Building
 
-Use PSoC Creator 4.4 to build the PSoC project. Make sure this program has been installed and set up.
+Use PSoC Creator 4.4 to build the PSoC project. Make sure PSoC Creator has been installed and set up.
 
 If there are any errors building, you may need to "update components" in the psoc creator project.
 
