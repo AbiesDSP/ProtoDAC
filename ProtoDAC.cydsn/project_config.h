@@ -74,7 +74,7 @@
 #define SYNC_MAX_WAIT 60
 
 // Audio transmit buffer
-#define AUDIO_TX_TRANSFER_SIZE 577
+#define AUDIO_TX_TRANSFER_SIZE 588
 #define AUDIO_TX_N_TDS 32
 #define AUDIO_TX_BUF_SIZE (AUDIO_TX_TRANSFER_SIZE * AUDIO_TX_N_TDS)
 // Turn on audio when it's half full
