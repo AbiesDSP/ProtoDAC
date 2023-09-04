@@ -2,6 +2,8 @@ build
 venv
 .vscode
 __pycache__
+archive
+release
 
 # PSoC Ignored Files
 # Ignore all but TopDesign, project file, design wide resources, main.c, and cyapicallbacks.h
@@ -16,9 +18,29 @@ __pycache__
 !*.cydsn/TopDesign/
 !*.cydsn/TopDesign/*.cysch
 !*.cydsn/CMakeLists.txt
+!*.cydsn/byte_swap*
+!*.cydsn/flush*
+!*.cydsn/sync_counter*
 *.LOG
 *.cycdx
 *.cyfit
 *.rpt
 *.svd
 *.html
+
+*-backups
+*_autosave*
+*-cache*
+*-rescue
+*.kicad_prl
+*.lck
+
+# FreeRTOS ignores
+FreeRTOS/Demo
+FreeRTOS/Test
+FreeRTOS/links
+FreeRTOS/Source/portable/*
+!FreeRTOS/Source/portable/GCC
+FreeRTOS/Source/portable/GCC/*
+!FreeRTOS/Source/portable/GCC/ARM_CM3
+!FreeRTOS/Source/portable/MemMang

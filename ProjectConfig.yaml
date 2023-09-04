@@ -1,0 +1,20 @@
+workspace: ProtoDAC.cywrk
+project: ProtoDAC
+version: ProtoDAC.cydsn/version.h
+build_type: Release
+psoc_creator_version: 4.4
+upgrade_file: ProtoDAC.cydsn/CortexM3/ARM_GCC_541/Release/ProtoDAC.cyacd
+release_files:
+  - ProtoDAC.cydsn/CortexM3/ARM_GCC_541/Release/ProtoDAC.cyacd
+  - ProtoDAC.cydsn/CortexM3/ARM_GCC_541/Release/ProtoDAC.hex
+  - ProjectConfig.yaml
+  - scripts/psoc_creator.py
+  - scripts/avril.py
+  - scripts/bootload.py
+  - scripts/listen.py
+  - requirements.txt
+  - README.md
+
+registers:
+  timestamp: 2048
+  enter_bootload: 16384
