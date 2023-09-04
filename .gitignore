@@ -3,6 +3,7 @@ venv
 .vscode
 __pycache__
 archive
+release
 
 # PSoC Ignored Files
 # Ignore all but TopDesign, project file, design wide resources, main.c, and cyapicallbacks.h
@@ -17,6 +18,9 @@ archive
 !*.cydsn/TopDesign/
 !*.cydsn/TopDesign/*.cysch
 !*.cydsn/CMakeLists.txt
+!*.cydsn/byte_swap*
+!*.cydsn/flush*
+!*.cydsn/sync_counter*
 *.LOG
 *.cycdx
 *.cyfit

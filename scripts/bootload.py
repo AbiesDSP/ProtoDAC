@@ -1,36 +1,59 @@
+#!/usr/bin/env python3
+
 """
 Script to bootload the Headphone DAC with new firmware.
 This will send a command to the device to run "Bootloadable_Load()".
 Then, cyflash is used as the bootloader host tool.
 This will find the port based on the PID.
 """
-from pathlib import Path
 import subprocess
 from avril import Avril, find_headphone_dac
 import time
-import sys
+import argparse
+from psoc_creator import PSoCConfig
+from pathlib import Path
 
-import buildp
+BOOTLOADER_SECURITY_KEY = "0x424344454647"
 
-build_config = "Release"
-upgrade_file = (
-    Path(f"HeadphoneDAC.cydsn/CortexM3/ARM_GCC_541/{build_config}")
-    / "HeadphoneDAC.cyacd"
+parser = argparse.ArgumentParser("Update the ProtoDAC's firmware.")
+parser.add_argument(
+    "--release",
+    action="store",
+    default=".",
+    help="Bootload from a release.",
+)
+parser.add_argument(
+    "--dev", action="store_true", help="Use the release in the project dir."
+)
+parser.add_argument(
+    "--config",
+    action="store",
+    default="ProjectConfig.yaml",
+    help="Specify a config file.",
 )
 
-ATTEMPTS = 3
-WAIT_DELAY = 1
 
-ENTER_BOOTLOAD_ADDR = 16384
-BOOTLOADER_SECURITY_KEY = "0x424344454647"
+class Args:
+    release: str
+    dev: bool
+    config: str
 
 
 def main():
-    if "--build" in sys.argv:
-        buildp.main()
+    args: Args = parser.parse_args()
+
+    cfg = PSoCConfig.from_yaml_file(args.config)
+
+    if args.dev:
+        # Use the upgrade file in the project dir.
+        upgrade_file = Path(cfg.upgrade_file)
+    else:
+        # Use the specified release dir, or look in the current directory.
+        upgrade_file = Path(args.release) / Path(cfg.upgrade_file).name
+
     # Enter bootload command.
     with Avril() as av:
-        av.write(ENTER_BOOTLOAD_ADDR, 42)
+        av.write(cfg.registers["enter_bootload"], 42)
         time.sleep(0.1)
 
     time.sleep(1.0)
@@ -50,6 +73,7 @@ def main():
         f"--key={BOOTLOADER_SECURITY_KEY}",
     ]
 
+    print(f"Bootloading Upgrade File: {upgrade_file}")
     boot_attemps = 3
     while boot_attemps > 0:
         try:
