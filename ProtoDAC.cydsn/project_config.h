@@ -33,7 +33,7 @@
 // Enough for 96kHz
 #define USB_AUDIO_EP_BUF_SIZE 588
 #define USB_CONFIG_SERVICE_MAX_WAIT 100
-#define USB_FEEDBACK_MAX_WAIT 10
+#define USB_FEEDBACK_MAX_WAIT 150
 #define USB_SERIAL_EP_BUF_SIZE 64
 
 // USB Interface Configuration
@@ -96,7 +96,7 @@
 #define EAR_SAVER_RESET_INTERVAL 2
 
 // Logging
-#define GLOBAL_LOG_LEVEL LOG_DEBUG
+#define GLOBAL_LOG_LEVEL LOG_INFO
 #define LOG_MESSAGE_BUF_SIZE 256
 
 //

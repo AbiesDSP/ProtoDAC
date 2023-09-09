@@ -51,7 +51,7 @@ def main():
     if args.delim.startswith("\\"):
         args.delim = args.delim[1:]
 
-    with Avril(timeout=0.05) as av:
+    with Avril(pid=cfg.usb_pid, timeout=0.05) as av:
         # Set the timestamp
         av.write(cfg.registers["timestamp"], int(time.time()))
 

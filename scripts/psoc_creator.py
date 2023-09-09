@@ -39,6 +39,7 @@ class PSoCConfig(YAMLWizard):
     psoc_creator_location: str = "C:/Program Files (x86)/Cypress/PSoC Creator"
     psoc_creator_version: str = "4.4"
     sub_path: str = "CortexM3/ARM_GCC_541"
+    usb_pid: int = 0xF14A
 
     def __post_init__(self):
         """If the version is given in a file, parse it."""

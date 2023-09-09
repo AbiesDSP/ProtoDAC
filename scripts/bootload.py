@@ -52,13 +52,13 @@ def main():
         upgrade_file = Path(args.release) / Path(cfg.upgrade_file).name
 
     # Enter bootload command.
-    with Avril() as av:
+    with Avril(cfg.usb_pid) as av:
         av.write(cfg.registers["enter_bootload"], 42)
         time.sleep(0.1)
 
     time.sleep(1.0)
     # Find the port
-    matching = find_headphone_dac()
+    matching = find_headphone_dac(cfg.usb_pid)
     if len(matching) == 0:
         raise Exception("Headphone DAC Bootloader is not running!")
     if len(matching) > 1:

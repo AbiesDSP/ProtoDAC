@@ -9,7 +9,7 @@ import serial.tools.list_ports
 AVRIL_WE = 0x80000000
 
 
-def find_headphone_dac(pid=0xF149):
+def find_headphone_dac(pid: int):
     """Find the device by its PID."""
     ports = list(serial.tools.list_ports.comports())
 
@@ -17,7 +17,7 @@ def find_headphone_dac(pid=0xF149):
 
 
 @contextmanager
-def open_serial_port(pid=0xF149, **kwargs):
+def open_serial_port(pid, **kwargs):
     """"""
     port = find_headphone_dac(pid)[0]
     dev = serial.Serial(port, **kwargs)
@@ -54,12 +54,13 @@ class AvrilCommand:
 
 @dataclass
 class Avril:
+    pid: int
     timeout: float = 1.0
     write_timeout: float = 1.0
     dev: serial.Serial = field(init=False)
 
     def __enter__(self):
-        port = find_headphone_dac()[0]
+        port = find_headphone_dac(self.pid)[0]
         self.dev = serial.Serial(
             port, timeout=self.timeout, write_timeout=self.write_timeout
         )

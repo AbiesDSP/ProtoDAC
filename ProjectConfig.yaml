@@ -19,3 +19,5 @@ release_files:
 registers:
   timestamp: 2048
   enter_bootload: 16384
+
+usb_pid: 0xF149

@@ -62,14 +62,18 @@ void USBServiceAudioFeedbackEp(void *pvParameters)
 
     for (ever)
     {
+        // The USB Feedback Endpoint has requested an update.
         if (ulTaskNotifyTake(pdTRUE, MaxWait))
         {
+            // If the Sync Monitor Task has updated the feedback value,
+            // update the endpoint's feedback data. Otherwise, keep it the same.
             if (xQueueReceive(FeedbackUpdateQueue, &new_feedback, 0))
             {
                 unpack_fb(new_feedback);
-                log_trace(&main_log, "FB: %d\n", new_feedback);
+                log_debug(&main_log, "FB: %d\n", new_feedback);
             }
-            // Load new feedback into ep.
+
+            // Write data to the feedback endpoint.
             if ((USBFS_GetEPState(USB_AUDIO_FB_EP) == USBFS_IN_BUFFER_EMPTY))
             {
                 USBFS_LoadInEP(USB_AUDIO_FB_EP, USBFS_NULL, 3);
@@ -77,11 +81,14 @@ void USBServiceAudioFeedbackEp(void *pvParameters)
         }
         else
         {
+            // The USB feedback endpoint will time-out if audio is not playing
             log_debug(&main_log, "FB TO\n");
         }
     }
 }
 
+// An external task should monitor the clock and usb sof
+// And call this function to update the feedback.
 void usb_update_audio_fb(uint32_t feedback)
 {
     xQueueOverwrite(FeedbackUpdateQueue, &feedback);
@@ -104,7 +111,7 @@ CY_ISR(usb_audio_out_fb_isr)
 {
     BaseType_t xHigherPriorityTaskWoken = pdFALSE;
     //
-    // xTaskNotifyFromISR(USBAudioFbTask, 0, eSetValueWithOverwrite, &xHigherPriorityTaskWoken);
     vTaskNotifyGiveFromISR(USBAudioFbTask, &xHigherPriorityTaskWoken);
+
     portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
 }

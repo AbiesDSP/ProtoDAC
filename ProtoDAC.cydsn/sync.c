@@ -13,7 +13,6 @@
 CY_ISR_PROTO(sync_counter_update_isr);
 
 static TaskHandle_t SyncMonitorTask = NULL;
-static TaskHandle_t AudioFbTask = NULL;
 
 void sync_init(void)
 {
@@ -42,9 +41,9 @@ int update_rolling_average(uint32_t feedback, uint32_t *average)
     return update;
 }
 
-void SyncMonitor(void *_AudioFbTask)
+void SyncMonitor(void *pvParameters)
 {
-    AudioFbTask = _AudioFbTask;
+    (void)pvParameters;
     SyncMonitorTask = xTaskGetCurrentTaskHandle();
 
     // isr arrives every 128ms. So if it times out, usb may have disconnected.
@@ -80,7 +79,6 @@ void SyncMonitor(void *_AudioFbTask)
             // Update usb once buffer is full.
             if (locked)
             {
-                // xTaskNotify(AudioFbTask, rolling_average, eSetValueWithOverwrite);
                 usb_update_audio_fb(rolling_average);
             }
         }

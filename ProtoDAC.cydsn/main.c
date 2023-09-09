@@ -38,15 +38,14 @@ int main(void)
     // USB Tasks
     usb_set_audio_output_task(AudioTxTask);
     xTaskCreate(USBConfigService, "USB Service Config", configMINIMAL_STACK_SIZE, NULL, USB_TASK_PRI, NULL);
-    TaskHandle_t USBFbTask = NULL;
-    xTaskCreate(USBServiceAudioFeedbackEp, "USB Feedback", LOG_MIN_STACK_SIZE, NULL, USB_TASK_PRI, &USBFbTask);
+    xTaskCreate(USBServiceAudioFeedbackEp, "USB Feedback", LOG_MIN_STACK_SIZE, NULL, USB_TASK_PRI, NULL);
 
     // USB Serial Port
     xTaskCreate(USBSerialTx, "USB Serial Tx", configMINIMAL_STACK_SIZE, NULL, SERIAL_TASK_PRI, NULL);
     xTaskCreate(USBSerialRx, "USB Serial Rx", configMINIMAL_STACK_SIZE, NULL, SERIAL_TASK_PRI, NULL);
 
     // USB Synchronization Monitor. Updates USB with new updates on the sample rate.
-    xTaskCreate(SyncMonitor, "Sync Monitor", LOG_MIN_STACK_SIZE, USBFbTask, SYNC_TASK_PRI, NULL);
+    xTaskCreate(SyncMonitor, "Sync Monitor", LOG_MIN_STACK_SIZE, NULL, SYNC_TASK_PRI, NULL);
 
     // Monitor for any error conditions that would cause unpleasant distortion, and automatically mute.
     xTaskCreate(EarSaver, "EarSaver", configMINIMAL_STACK_SIZE, NULL, EAR_SAVER_TASK_PRI, NULL);
