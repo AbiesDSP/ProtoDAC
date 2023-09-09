@@ -5,6 +5,7 @@
 #include "semphr.h"
 #include "portable.h"
 #include "log_level.h"
+#include <cytypes.h>
 
 // Enable processing data before transmitting.
 #define ENABLE_PROC 1
@@ -32,7 +33,7 @@
 // Enough for 96kHz
 #define USB_AUDIO_EP_BUF_SIZE 588
 #define USB_CONFIG_SERVICE_MAX_WAIT 100
-#define USB_FEEDBACK_MAX_WAIT 60
+#define USB_FEEDBACK_MAX_WAIT 10
 #define USB_SERIAL_EP_BUF_SIZE 64
 
 // USB Interface Configuration
@@ -71,16 +72,16 @@
 #define SYNC_N_WINDOWS 16
 #define SYNC_SHIFT 5 // log2(SYNC_N_WINDOWS * SYNC_WINDOW_SIZE / 64). 3 for 96kHz
 #define SYNC_START_DELAY 200
-#define SYNC_MAX_WAIT 60
+#define SYNC_MAX_WAIT 150
 
 // Audio transmit buffer
-#define AUDIO_TX_TRANSFER_SIZE 588
-#define AUDIO_TX_N_TDS 32
+#define AUDIO_TX_TRANSFER_SIZE 288
+#define AUDIO_TX_N_TDS 8
 #define AUDIO_TX_BUF_SIZE (AUDIO_TX_TRANSFER_SIZE * AUDIO_TX_N_TDS)
 // Turn on audio when it's half full
 #define AUDIO_TX_ACTIVE_LIMIT ((AUDIO_TX_TRANSFER_SIZE * AUDIO_TX_N_TDS) >> 1)
 
-#define AUDIO_TX_OVERFLOW_BLOCKS 4
+#define AUDIO_TX_OVERFLOW_BLOCKS 2
 #define AUDIO_TX_OVERFLOW_LIMIT (AUDIO_TX_BUF_SIZE - AUDIO_TX_TRANSFER_SIZE * AUDIO_TX_OVERFLOW_BLOCKS)
 #define AUDIO_TX_UNDERFLOW_LIMIT (AUDIO_TX_TRANSFER_SIZE * AUDIO_TX_OVERFLOW_BLOCKS)
 
@@ -95,7 +96,7 @@
 #define EAR_SAVER_RESET_INTERVAL 2
 
 // Logging
-#define GLOBAL_LOG_LEVEL LOG_INFO
+#define GLOBAL_LOG_LEVEL LOG_DEBUG
 #define LOG_MESSAGE_BUF_SIZE 256
 
 //

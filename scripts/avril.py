@@ -1,3 +1,4 @@
+"""Abies Virtual Register Interface Library"""
 from dataclasses import dataclass, field
 import struct
 

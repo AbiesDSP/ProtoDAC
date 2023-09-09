@@ -39,7 +39,7 @@ int main(void)
     usb_set_audio_output_task(AudioTxTask);
     xTaskCreate(USBConfigService, "USB Service Config", configMINIMAL_STACK_SIZE, NULL, USB_TASK_PRI, NULL);
     TaskHandle_t USBFbTask = NULL;
-    xTaskCreate(USBServiceAudioFeedbackEp, "USB Feedback", configMINIMAL_STACK_SIZE, NULL, USB_TASK_PRI, &USBFbTask);
+    xTaskCreate(USBServiceAudioFeedbackEp, "USB Feedback", LOG_MIN_STACK_SIZE, NULL, USB_TASK_PRI, &USBFbTask);
 
     // USB Serial Port
     xTaskCreate(USBSerialTx, "USB Serial Tx", configMINIMAL_STACK_SIZE, NULL, SERIAL_TASK_PRI, NULL);

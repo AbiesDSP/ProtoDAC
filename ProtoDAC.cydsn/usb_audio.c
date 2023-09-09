@@ -8,11 +8,15 @@
 #include "semphr.h"
 #include "portable.h"
 
+#include "loggers.h"
+
 uint8_t usb_audio_out_ep_buf[USB_AUDIO_EP_BUF_SIZE];
 uint8_t usb_audio_fb_ep_buf[3];
 
 TaskHandle_t USBAudioOutTask = NULL;
 static TaskHandle_t USBAudioFbTask = NULL;
+
+static QueueHandle_t FeedbackUpdateQueue = NULL;
 
 static uint32_t sample_rate = 0;
 
@@ -34,6 +38,8 @@ void usb_audio_init(void)
     sample_rate = AUDIO_SAMPLE_RATE;
     uint32_t initial_feedback = fs_to_feedback(sample_rate);
     unpack_fb(initial_feedback);
+
+    FeedbackUpdateQueue = xQueueCreate(1, sizeof(uint32_t));
 }
 
 uint8_t *usb_get_audio_out_ep_buf(void)
@@ -52,24 +58,33 @@ void USBServiceAudioFeedbackEp(void *pvParameters)
     USBAudioFbTask = xTaskGetCurrentTaskHandle();
 
     const TickType_t MaxWait = pdMS_TO_TICKS(USB_FEEDBACK_MAX_WAIT);
-
     uint32_t new_feedback;
 
     for (ever)
     {
-        if (xTaskNotifyWait(0, UINT32_MAX, &new_feedback, MaxWait))
+        if (ulTaskNotifyTake(pdTRUE, MaxWait))
         {
-            if (new_feedback)
+            if (xQueueReceive(FeedbackUpdateQueue, &new_feedback, 0))
             {
                 unpack_fb(new_feedback);
+                log_trace(&main_log, "FB: %d\n", new_feedback);
             }
             // Load new feedback into ep.
-            else if ((USBFS_GetEPState(USB_AUDIO_FB_EP) == USBFS_IN_BUFFER_EMPTY))
+            if ((USBFS_GetEPState(USB_AUDIO_FB_EP) == USBFS_IN_BUFFER_EMPTY))
             {
                 USBFS_LoadInEP(USB_AUDIO_FB_EP, USBFS_NULL, 3);
             }
         }
+        else
+        {
+            log_debug(&main_log, "FB TO\n");
+        }
     }
+}
+
+void usb_update_audio_fb(uint32_t feedback)
+{
+    xQueueOverwrite(FeedbackUpdateQueue, &feedback);
 }
 
 CY_ISR(usb_audio_out_ep_isr)
@@ -89,6 +104,7 @@ CY_ISR(usb_audio_out_fb_isr)
 {
     BaseType_t xHigherPriorityTaskWoken = pdFALSE;
     //
-    xTaskNotifyFromISR(USBAudioFbTask, 0, eSetValueWithOverwrite, &xHigherPriorityTaskWoken);
+    // xTaskNotifyFromISR(USBAudioFbTask, 0, eSetValueWithOverwrite, &xHigherPriorityTaskWoken);
+    vTaskNotifyGiveFromISR(USBAudioFbTask, &xHigherPriorityTaskWoken);
     portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
 }

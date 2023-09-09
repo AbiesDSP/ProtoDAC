@@ -47,12 +47,8 @@ void SyncMonitor(void *_AudioFbTask)
     AudioFbTask = _AudioFbTask;
     SyncMonitorTask = xTaskGetCurrentTaskHandle();
 
-    // isr arrives every 128ms. So if it times out, usb may have stopped.
+    // isr arrives every 128ms. So if it times out, usb may have disconnected.
     const TickType_t xMaxBlockTime = pdMS_TO_TICKS(SYNC_MAX_WAIT);
-
-    // Delay on startup to dump the first, inaccurate counter value
-    const TickType_t xStartDelay = pdMS_TO_TICKS(SYNC_START_DELAY);
-    vTaskDelay(xStartDelay);
 
     // Don't update until the rolling average buffer is valid.
     int locked = 0;
@@ -84,13 +80,14 @@ void SyncMonitor(void *_AudioFbTask)
             // Update usb once buffer is full.
             if (locked)
             {
-                xTaskNotify(AudioFbTask, rolling_average, eSetValueWithOverwrite);
+                // xTaskNotify(AudioFbTask, rolling_average, eSetValueWithOverwrite);
+                usb_update_audio_fb(rolling_average);
             }
         }
         else
         {
             /* The call to ulTaskNotifyTake() timed out. */
-            // log_debug(&serial_log, "Sync Feedback Timed Out!\n");
+            log_warn(&main_log, "Sync Feedback Timed Out!\n");
         }
     }
 }
