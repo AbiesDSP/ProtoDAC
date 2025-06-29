@@ -63,6 +63,7 @@ def main():
         raise Exception("Headphone DAC Bootloader is not running!")
     if len(matching) > 1:
         raise Exception("Multiple ports found")
+    
     # Run the bootload command.
     bootload_cmd = [
         "cyflash",
