@@ -158,6 +158,7 @@ void AudioTx(void *source_buffer)
                 unpack_usb_data_float(source_buffer, n_samples, rsrc, 1);
 
                 float gain = get_knob(0);
+                // float gain = 1.0;
 
                 volume(lsrc, lsrc, n_samples, gain);
                 volume(rsrc, rsrc, n_samples, gain);

@@ -1,0 +1,14 @@
+[project]
+name = "protodac"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "cyflash>=1.7",
+    "dataclass-wizard[yaml]==0.22.2",
+    "pyserial>=3.5",
+]
+
+[tool.uv.sources]
+cyflash = { git = "https://github.com/arachnidlabs/cyflash.git" }
